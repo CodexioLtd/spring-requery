@@ -35,7 +35,6 @@ a generic HTTP Request and a desired query while maintaining the security undern
 
 ## Quick Start
 
-
 ## Contributing
 
 This project could use a support and contributors are very welcomed. If you feel that something has to be
