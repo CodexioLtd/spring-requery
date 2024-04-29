@@ -14,7 +14,6 @@ import static org.junit.jupiter.api.Assertions.*;
 class FilterJsonTypeConversionConfigurationTest {
     private FilterJsonTypeConverterImpl converter;
 
-
     @BeforeEach
     void setup() {
         this.converter = new FilterJsonTypeConverterImpl();

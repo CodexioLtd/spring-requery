@@ -29,7 +29,6 @@ class SwaggerConfigTest {
     private MethodParameter methodParameterMock;
     private ArgumentCaptor<Parameter> parameterCaptor;
 
-
     @BeforeEach
     void setup() {
         this.swaggerConfig = new SwaggerConfig();
