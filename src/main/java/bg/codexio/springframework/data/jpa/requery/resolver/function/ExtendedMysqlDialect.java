@@ -14,9 +14,9 @@ public class ExtendedMysqlDialect
         super.initializeFunctionRegistry(functionContributions);
 
         functionContributions.getFunctionRegistry()
-                .register(
-                        CaseInsensitiveLikeSQLFunction.FUNC_NAME,
-                        new CaseInsensitiveLikeSQLFunction()
-                );
+                             .register(
+                                     CaseInsensitiveLikeSQLFunction.FUNC_NAME,
+                                     new CaseInsensitiveLikeSQLFunction()
+                             );
     }
 }
