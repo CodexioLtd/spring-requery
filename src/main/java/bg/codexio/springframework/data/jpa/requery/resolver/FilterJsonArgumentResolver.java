@@ -27,6 +27,13 @@ import java.lang.reflect.ParameterizedType;
 import java.util.Collection;
 import java.util.List;
 
+/**
+ * A Spring MVC argument resolver for converting JSON-encoded filter criteria
+ * into {@link Specification} objects. This resolver allows for complex
+ * filtering strategies to be applied to JPA entity queries based on JSON
+ * input from web requests, supporting both simple and complex structured
+ * filters.
+ */
 @Component
 public class FilterJsonArgumentResolver
         implements HandlerMethodArgumentResolver {
@@ -44,6 +51,13 @@ public class FilterJsonArgumentResolver
         this.converter = converter;
     }
 
+    /**
+     * Determines if this resolver is applicable for the method parameter,
+     * specifically checking if the parameter is of type {@link Specification}.
+     *
+     * @param parameter the method parameter to check
+     * @return true if the parameter is a {@link Specification}, false otherwise
+     */
     @Override
     public boolean supportsParameter(MethodParameter parameter) {
         return parameter.getParameter()
@@ -51,6 +65,16 @@ public class FilterJsonArgumentResolver
                         .equals(Specification.class);
     }
 
+    /**
+     * Resolves a method parameter into an argument value from a given web
+     * request.
+     *
+     * @param parameter  the method parameter to resolve
+     * @param webRequest the {@link NativeWebRequest} being handled
+     * @return the resolved {@link Specification} object, or {@code null} if
+     * no filters are provided
+     * @throws Exception if an error occurs during argument resolution
+     */
     @Override
     public Object resolveArgument(
             @NotNull MethodParameter parameter,
@@ -81,10 +105,32 @@ public class FilterJsonArgumentResolver
         return this.noFilterSpecification();
     }
 
+    /**
+     * Provides a default {@link Specification} that applies no filtering to
+     * the query.
+     *
+     * @return A {@link Specification} that does not alter the query.
+     */
     private Specification<Object> noFilterSpecification() {
         return Specification.where(null);
     }
 
+    /**
+     * Parses a JSON string representing complex filtering criteria into a
+     * {@link Specification}. This method handles the deserialization of
+     * complex structured JSON into {@link FilterGroupRequest} and
+     * recursively builds a composite {@link Specification} based on the
+     * logical operations and groupings defined within the filter request.
+     *
+     * @param complexFilterJson The JSON string containing the complex filter
+     *                          criteria.
+     * @param genericType       The entity class type on which the filter
+     *                          will be applied.
+     * @return A {@link Specification} representing the complex filtering
+     * criteria.
+     * @throws JsonProcessingException If there is an error parsing the JSON
+     *                                 string.
+     */
     private Specification<Object> getComplexFilterSpecification(
             String complexFilterJson,
             Class<?> genericType
@@ -100,6 +146,25 @@ public class FilterJsonArgumentResolver
         );
     }
 
+    /**
+     * Recursively computes a {@link Specification} by navigating through
+     * nested groups of filter operations. This method starts with a base
+     * specification and applies a series of logical operations and filter
+     * criteria, constructing a tree of specifications that reflect the
+     * complex structure of the input filter groups.
+     *
+     * @param startingSpecification The initial {@link Specification} to
+     *                              which subsequent filters are applied.
+     * @param startingOperator      The logical operator (e.g., AND, OR) to
+     *                              apply between groups.
+     * @param startingGroup         The {@link FilterGroupRequest} defining
+     *                              the initial set of filters and nested
+     *                              groups.
+     * @param genericType           The entity class type on which the filter
+     *                              will be applied.
+     * @return A {@link Specification} that represents the combination of all
+     * applied filters and operations.
+     */
     private Specification<Object> computeRecursiveRightLeftSideQuery(
             Specification<Object> startingSpecification,
             FilterLogicalOperator startingOperator,
@@ -151,6 +216,20 @@ public class FilterJsonArgumentResolver
         );
     }
 
+    /**
+     * Parses a JSON string representing simple or list-based filter criteria
+     * into a {@link Specification}. This method supports either a single
+     * JSON object or an array of objects defining filter criteria, which are
+     * then transformed into a {@link Specification} based on the type of
+     * entity being filtered.
+     *
+     * @param filterJson  The JSON string containing filter criteria.
+     * @param genericType The class type of the entities being filtered.
+     * @return A {@link Specification} that represents the filter criteria
+     * provided.
+     * @throws JsonProcessingException If there is an error parsing the JSON
+     *                                 string.
+     */
     private Specification<Object> getSimpleFilterSpecification(
             String filterJson,
             Class<?> genericType
@@ -184,6 +263,22 @@ public class FilterJsonArgumentResolver
         return specification;
     }
 
+    /**
+     * Constructs a {@link Specification} from a given filter request,
+     * applying the specified logical operator. This method centralizes the
+     * creation of specifications based on individual filter criteria,
+     * handling value conversion and predicate creation based on the filter's
+     * operation.
+     *
+     * @param specification The starting specification to which the new
+     *                      condition will be added.
+     * @param filter        The filter criteria to apply.
+     * @param genericType   The type of entity being filtered.
+     * @param operator      The logical operator to apply with the existing
+     *                      specification.
+     * @return A new {@link Specification} that includes the condition
+     * derived from the filter.
+     */
     private Specification<Object> getSpecification(
             Specification<Object> specification,
             FilterRequest filter,
@@ -201,15 +296,25 @@ public class FilterJsonArgumentResolver
         return this.rightLeftSideByOperator(
                 specification,
                 operator,
-                (root, cq, cb) -> this.getFilterPredicate(filter,
-                                                          genericType,
-                                                          value,
-                                                          root,
-                                                          cb
+                (root, cq, cb) -> this.getFilterPredicate(
+                        filter,
+                        genericType,
+                        value,
+                        root,
+                        cb
                 )
         );
     }
 
+    /**
+     * Combines two specifications using the specified logical operator.
+     *
+     * @param leftSide  The left-hand specification.
+     * @param operator  The logical operator to use (AND, OR).
+     * @param rightSide The right-hand specification.
+     * @return A new {@link Specification} that represents the combination of
+     * both sides using the logical operator.
+     */
     private Specification<Object> rightLeftSideByOperator(
             Specification<Object> leftSide,
             FilterLogicalOperator operator,
@@ -221,6 +326,19 @@ public class FilterJsonArgumentResolver
         };
     }
 
+    /**
+     * Creates a JPA {@link Predicate} based on a filter request, translating
+     * the filter's operation into a query condition.
+     *
+     * @param filter      The filter request defining the condition to apply.
+     * @param genericType The type of entity being filtered.
+     * @param value       The value to compare or match against, properly
+     *                    converted.
+     * @param root        The root of the query from which paths are derived.
+     * @param cb          The {@link CriteriaBuilder} used to construct the
+     *                    query predicates.
+     * @return A {@link Predicate} representing the filter condition.
+     */
     private Predicate getFilterPredicate(
             FilterRequest filter,
             Class<?> genericType,
@@ -296,36 +414,51 @@ public class FilterJsonArgumentResolver
                         .as(String.class),
                     "%" + filter.value() + "%"
             );
-            case IN -> this.in(filter,
-                               genericType,
-                               root
+            case IN -> this.in(
+                    filter,
+                    genericType,
+                    root
             );
-            case NOT_IN -> this.notIn(filter,
-                                      genericType,
-                                      root
+            case NOT_IN -> this.notIn(
+                    filter,
+                    genericType,
+                    root
             );
-            case BEGINS_WITH_CASEINS -> this.caseInsensitiveLikeFunction(filter,
-                                                                         root,
-                                                                         cb,
-                                                                         filter.value()
-                                                                                 + "%"
+            case BEGINS_WITH_CASEINS -> this.caseInsensitiveLikeFunction(
+                    filter,
+                    root,
+                    cb,
+                    filter.value() + "%"
             );
-            case ENDS_WITH_CASEINS -> this.caseInsensitiveLikeFunction(filter,
-                                                                       root,
-                                                                       cb,
-                                                                       "%"
-                                                                               + filter.value()
+            case ENDS_WITH_CASEINS -> this.caseInsensitiveLikeFunction(
+                    filter,
+                    root,
+                    cb,
+                    "%" + filter.value()
             );
-            case CONTAINS_CASEINS -> this.caseInsensitiveLikeFunction(filter,
-                                                                      root,
-                                                                      cb,
-                                                                      "%"
-                                                                              + filter.value()
-                                                                              + "%"
+            case CONTAINS_CASEINS -> this.caseInsensitiveLikeFunction(
+                    filter,
+                    root,
+                    cb,
+                    "%" + filter.value() + "%"
             );
         };
     }
 
+    /**
+     * Converts a string value to its corresponding Java type based on the
+     * entity's field type. This method uses the
+     * {@link FilterJsonTypeConverter} to ensure that string values are
+     * correctly converted to the appropriate type, facilitating type-safe
+     * queries.
+     *
+     * @param field The name of the field whose type should guide the
+     *              conversion.
+     * @param type  The Java class of the entity being queried.
+     * @param value The string value to be converted.
+     * @return A {@link Comparable} representing the converted value or the
+     * original value if conversion fails.
+     */
     private Comparable convertValue(
             String field,
             Class<?> type,
@@ -351,6 +484,19 @@ public class FilterJsonArgumentResolver
         }
     }
 
+    /**
+     * Converts a list of string values to their corresponding Java types
+     * based on the entity's field type. This method processes each string in
+     * the list individually, applying the same type conversion as
+     * {@link #convertValue(String, Class, String)} to each element.
+     *
+     * @param field The name of the field whose type should guide the
+     *              conversion.
+     * @param type  The Java class of the entity being queried.
+     * @param value The list of values to be converted.
+     * @return A list of {@link Comparable} representing the converted
+     * values, or the original list if conversion fails.
+     */
     private List<? extends Comparable> convertValue(
             String field,
             Class<?> type,
@@ -380,6 +526,18 @@ public class FilterJsonArgumentResolver
         }
     }
 
+    /**
+     * Retrieves a {@link Path} for a specified entity field from a
+     * {@link Root} object, potentially navigating nested properties based on
+     * dot-separated paths.
+     *
+     * @param root   The {@link Root} object from which to start the path
+     *               retrieval.
+     * @param filter The {@link FilterRequest} containing the field
+     *               information, which may include nested properties.
+     * @return A {@link Path} object representing the location of the field
+     * within the entity model.
+     */
     private Path getPath(
             Root<Object> root,
             FilterRequest filter
@@ -400,6 +558,16 @@ public class FilterJsonArgumentResolver
         return path;
     }
 
+    /**
+     * Joins a path to the next segment or retrieves the next segment if it
+     * already exists. This method assists in navigating nested paths in
+     * entity models.
+     *
+     * @param path  The current {@link Path} from which the next segment
+     *              should be retrieved or joined.
+     * @param field The field name representing the next segment of the path.
+     * @return The updated {@link Path} including the next segment.
+     */
     private Path joinOrGet(
             Path path,
             String field
@@ -407,6 +575,19 @@ public class FilterJsonArgumentResolver
         return path.get(field);
     }
 
+    /**
+     * Retrieves detailed information about a field specified by a
+     * dot-separated path within a class hierarchy. This method recursively
+     * resolves each segment of the field path to determine the final field
+     * and its type, which can be used for type conversion and query
+     * generation purposes.
+     *
+     * @param fieldPath The dot-separated path to the field in the class
+     *                  hierarchy.
+     * @param type      The starting class from which to resolve the field path.
+     * @return A {@link FieldInfo} object containing the resolved
+     * {@link Field} and its type.
+     */
     private FieldInfo getFieldInfo(
             String fieldPath,
             Class<?> type
@@ -433,6 +614,20 @@ public class FilterJsonArgumentResolver
         );
     }
 
+    /**
+     * Recursively retrieves a {@link Field} from a class or its superclass
+     * hierarchy based on the field name provided. This method attempts to
+     * find the field in the given class and, if not found, continues to
+     * search in the superclass, recursively moving up the class hierarchy
+     * until the field is found or no superclass remains.
+     *
+     * @param field The name of the field to retrieve.
+     * @param type  The class from which to start the search.
+     * @return The {@link Field} object corresponding to the specified field
+     * name.
+     * @throws NoSuchFieldException if the field cannot be found in the class
+     *                              hierarchy.
+     */
     private Field getFieldFromTypeChain(
             String field,
             Class<?> type
@@ -447,6 +642,17 @@ public class FilterJsonArgumentResolver
         }
     }
 
+    /**
+     * Creates a JPA {@link Predicate} representing an 'IN' clause for a
+     * specified field and value list.
+     *
+     * @param filter      The filter criteria containing the field and value
+     *                    list.
+     * @param genericType The class type of the entities being queried.
+     * @param root        The root of the query from which the field path is
+     *                    derived.
+     * @return A {@link Predicate} for the 'IN' condition.
+     */
     private Predicate in(
             FilterRequest filter,
             Class<?> genericType,
@@ -456,12 +662,24 @@ public class FilterJsonArgumentResolver
                            root,
                            filter
                    )
-                   .in(this.convertValue(filter.field(),
-                                         genericType,
-                                         (List<? extends Comparable>) filter.value()
+                   .in(this.convertValue(
+                           filter.field(),
+                           genericType,
+                           (List<? extends Comparable>) filter.value()
                    ));
     }
 
+    /**
+     * Creates a JPA {@link Predicate} representing a 'NOT IN' clause for a
+     * specified field and value list.
+     *
+     * @param filter      The filter criteria containing the field and value
+     *                    list.
+     * @param genericType The class type of the entities being queried.
+     * @param root        The root of the query from which the field path is
+     *                    derived.
+     * @return A {@link Predicate} for the 'NOT IN' condition.
+     */
     private Predicate notIn(
             FilterRequest filter,
             Class<?> genericType,
@@ -475,6 +693,19 @@ public class FilterJsonArgumentResolver
                    .not();
     }
 
+    /**
+     * Creates a JPA {@link Predicate} using a custom SQL function for
+     * case-insensitive LIKE matching.
+     *
+     * @param filter  The filter criteria containing the field and value.
+     * @param root    The root of the query from which the field path is
+     *                derived.
+     * @param cb      The {@link CriteriaBuilder} used to create the predicate.
+     * @param literal The literal value to be matched in a case-insensitive
+     *                manner.
+     * @return A {@link Predicate} that applies the custom case-insensitive
+     * LIKE SQL function.
+     */
     private Predicate caseInsensitiveLikeFunction(
             FilterRequest filter,
             Root<Object> root,
