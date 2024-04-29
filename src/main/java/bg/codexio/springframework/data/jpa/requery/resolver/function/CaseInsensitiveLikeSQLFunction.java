@@ -1,5 +1,6 @@
 package bg.codexio.springframework.data.jpa.requery.resolver.function;
 
+import org.hibernate.query.ReturnableType;
 import org.hibernate.query.sqm.function.NamedSqmFunctionDescriptor;
 import org.hibernate.query.sqm.produce.function.StandardArgumentsValidators;
 import org.hibernate.sql.ast.SqlAstNodeRenderingMode;
@@ -26,6 +27,7 @@ public class CaseInsensitiveLikeSQLFunction
     public void render(
             SqlAppender sqlAppender,
             List<? extends SqlAstNode> arguments,
+            ReturnableType<?> returnType,
             SqlAstTranslator<?> walker
     ) {
         sqlAppender.appendSql("(LOWER(");

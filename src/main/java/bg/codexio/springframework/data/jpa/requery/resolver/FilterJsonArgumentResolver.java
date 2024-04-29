@@ -11,6 +11,7 @@ import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
+import jakarta.validation.constraints.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.MethodParameter;
@@ -18,11 +19,9 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.support.WebDataBinderFactory;
 import org.springframework.web.context.request.NativeWebRequest;
-import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.method.support.ModelAndViewContainer;
 
-import javax.validation.constraints.NotNull;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.util.Collection;
@@ -59,10 +58,8 @@ public class FilterJsonArgumentResolver
             @NotNull NativeWebRequest webRequest,
             WebDataBinderFactory binderFactory
     ) throws Exception {
-        String filterJson = ((ServletWebRequest) webRequest).getParameter(
-                "filter");
-        String complexFilterJson =
-                ((ServletWebRequest) webRequest).getParameter("complexFilter");
+        var filterJson = webRequest.getParameter("filter");
+        var complexFilterJson = webRequest.getParameter("complexFilter");
 
         var genericType =
                 (Class<?>) ((ParameterizedType) parameter.getGenericParameterType()).getActualTypeArguments()[0];
@@ -362,19 +359,15 @@ public class FilterJsonArgumentResolver
         try {
             return value.stream()
                         .map(v -> {
-                            try {
-                                var fieldInfo = this.getFieldInfo(
-                                        field,
-                                        type
-                                );
+                            var fieldInfo = this.getFieldInfo(
+                                    field,
+                                    type
+                            );
 
-                                return this.converter.convert(
-                                        fieldInfo.type(),
-                                        v.toString()
-                                );
-                            } catch (ReflectiveOperationException e) {
-                                throw new RuntimeException(e);
-                            }
+                            return this.converter.convert(
+                                    fieldInfo.type(),
+                                    v.toString()
+                            );
                         })
                         .toList();
         } catch (RuntimeException e) {
@@ -417,7 +410,7 @@ public class FilterJsonArgumentResolver
     private FieldInfo getFieldInfo(
             String fieldPath,
             Class<?> type
-    ) throws ReflectiveOperationException {
+    ) {
         var fields = fieldPath.split("\\.");
         var field = (Field) null;
         var currentType = type;
