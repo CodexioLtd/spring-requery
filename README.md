@@ -48,7 +48,6 @@ a generic HTTP Request and a desired query while maintaining the security undern
 **Add Maven Dependency**
 
 ```xml
-
 <dependency>
     <groupId>bg.codexio.springframework.data.jpa.requery</groupId>
     <artifactId>requery-core</artifactId>
@@ -69,7 +68,6 @@ configuration:
 #### Register the argument resolver:
 
 ```java
-
 @Configuration
 public class FilterJsonArgumentResolverConfiguration
         implements WebMvcConfigurer {
