@@ -31,9 +31,102 @@ a generic HTTP Request and a desired query while maintaining the security undern
 
 * [Preambule](#preambule)
 * [Table of Contents](#table-of-contents)
+* [Features](#features)
 * [Quick Start](#quick-start)
 
+## Features
+
+* **Dynamic Query Generation:** Create complex queries from HTTP requests dynamically.
+* **Flexible Filtering:** Use the provided `FilterJsonArgumentResolver` to handle JSON based filtering.
+* **Enum Handling:** Map enums to database columns seamlessly with `JoinColumnEnumeration`.
+
 ## Quick Start
+
+**Add Maven Dependency**
+
+```xml
+
+<dependency>
+    <groupId>bg.codexio.springframework.data.jpa.requery</groupId>
+    <artifactId>requery-core</artifactId>
+    <version>1.0.2-SNAPSHOT</version>
+</dependency>
+```
+
+## Usage
+
+**Requery** is designed to simplify the dynamic generation of queries from HTTP requests in Spring MVC applications.
+Here’s how you can integrate and utilize the key components of the library:
+
+### Configuration
+
+To leverage the `FilterJsonArgumentResolver` and other components, you need to set up several beans in your Spring
+configuration:
+
+#### Register the argument resolver:
+
+```java
+
+@Configuration
+public class FilterJsonArgumentResolverConfiguration
+        implements WebMvcConfigurer {
+    private final FilterJsonArgumentResolver filterJsonArgumentResolver;
+
+    public FilterJsonArgumentResolverConfiguration(FilterJsonArgumentResolver filterJsonArgumentResolver) {
+        this.filterJsonArgumentResolver = filterJsonArgumentResolver;
+    }
+
+    @Override
+    public void addArgumentResolvers(List<HandlerMethodArgumentResolver> resolvers) {
+        resolvers.add(this.filterJsonArgumentResolver);
+    }
+}
+```
+
+### Hibernate dialect configuration
+
+Since `Requery` may optimize SQL queries differently based on the database type. Currently, we support two dialect
+extensions - MySQL and PostgreSQL
+
+Add the Hibernate dialect setting in your `application.properties` or `application.yml` as follows:
+
+#### For MySQL:
+
+```properties
+spring.jpa.properties.hibernate.dialect=bg.codexio.springframework.data.jpa.requery.resolver.function.ExtendedMysqlDialect
+```
+
+#### For PostgreSQL:
+
+```properties
+spring.jpa.properties.hibernate.dialect=bg.codexio.springframework.data.jpa.requery.resolver.function.ExtendedPostgresqlDialect
+```
+
+### Basic Usage in a Controller
+
+After setting up your configuration, you can use the `FilterJsonArgumentResolver` in your controllers to dynamically
+construct queries based on JSON input:
+
+```java
+
+@RestController
+public class MyController {
+
+    private final MyEntityRepository myEntityRepository;
+
+    public MyController(MyEntityRepository myEntityRepository) {
+        this.myEntityRepository = myEntityRepository;
+    }
+
+    @GetMapping("/my-entities")
+    public ResponseEntity<List<MyEntity>> getMyEntities(Specification<MyEntity> spec) {
+        return ResponseEntity.ok(myEntityRepository.findAll(spec));
+    }
+}
+```
+
+This setup enables your Spring application to interpret JSON filter parameters directly from request queries and convert
+them into JPA specifications
 
 ## Contributing
 
