@@ -33,6 +33,9 @@ a generic HTTP Request and a desired query while maintaining the security undern
 * [Table of Contents](#table-of-contents)
 * [Features](#features)
 * [Quick Start](#quick-start)
+* [Usage](#usage)
+* [Contributing](#contributing)
+* [License](#license)
 
 ## Features
 
