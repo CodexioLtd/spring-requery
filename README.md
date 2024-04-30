@@ -109,7 +109,6 @@ After setting up your configuration, you can use the `FilterJsonArgumentResolver
 construct queries based on JSON input:
 
 ```java
-
 @RestController
 public class MyController {
 
