@@ -10,6 +10,14 @@ import org.hibernate.sql.ast.tree.SqlAstNode;
 
 import java.util.List;
 
+/**
+ * A SQL function descriptor for Hibernate that renders a case-insensitive
+ * "LIKE" SQL operation.
+ *
+ * <p>This function assumes the SQL dialect supports the LOWER function and
+ * that it will be applied
+ * to string type columns or values.</p>
+ */
 public class CaseInsensitiveLikeSQLFunction
         extends NamedSqmFunctionDescriptor {
 
@@ -24,6 +32,16 @@ public class CaseInsensitiveLikeSQLFunction
         );
     }
 
+    /**
+     * Renders the SQL for a case-insensitive LIKE operation using the LOWER
+     * function on both sides of the LIKE operator.
+     *
+     * @param sqlAppender the appender to which the SQL is written
+     * @param arguments   the arguments of the SQL function, expecting
+     *                    exactly two
+     * @param walker      the SQL AST translator that handles the rendering
+     *                    of {@link SqlAstNode} instances
+     */
     public void render(
             SqlAppender sqlAppender,
             List<? extends SqlAstNode> arguments,

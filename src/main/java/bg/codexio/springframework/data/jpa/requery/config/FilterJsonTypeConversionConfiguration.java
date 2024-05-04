@@ -9,23 +9,37 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.function.BiFunction;
 
+/**
+ * Configuration class to handle the conversion of JSON types to Java types
+ * within the application.
+ * It supports custom conversions for {@link LocalDateTime},
+ * {@link LocalDate}, {@link Boolean},
+ * and {@link JoinColumnEnumeration}.
+ */
 @Configuration
 public class FilterJsonTypeConversionConfiguration {
     public FilterJsonTypeConversionConfiguration(
             FilterJsonTypeConverter converter,
             PrimaryKeyProvider primaryKeyProvider
     ) {
-        converter.addConversion(LocalDateTime.class, (input, type) -> LocalDateTime.parse(
-                input,
-                DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")
-        ));
+        converter.addConversion(
+                LocalDateTime.class,
+                (input, type) -> LocalDateTime.parse(
+                        input,
+                        DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")
+                )
+        );
 
-        converter.addConversion(LocalDate.class, (input, type) -> LocalDate.parse(
-                input,
-                DateTimeFormatter.ofPattern("dd/MM/yyyy")
-        ));
+        converter.addConversion(
+                LocalDate.class,
+                (input, type) -> LocalDate.parse(
+                        input,
+                        DateTimeFormatter.ofPattern("dd/MM/yyyy")
+                )
+        );
 
-        BiFunction<String, Class<?>, Boolean> boolConversion = (input, type) -> {
+        BiFunction<String, Class<?>, Boolean> boolConversion =
+                (input, type) -> {
             if (input.equalsIgnoreCase("1")) {
                 return true;
             }
@@ -37,8 +51,14 @@ public class FilterJsonTypeConversionConfiguration {
             return Boolean.parseBoolean(input);
         };
 
-        converter.addConversion(Boolean.class, boolConversion);
-        converter.addConversion(boolean.class, boolConversion);
+        converter.addConversion(
+                Boolean.class,
+                boolConversion
+        );
+        converter.addConversion(
+                boolean.class,
+                boolConversion
+        );
 
         converter.addConversion(
                 JoinColumnEnumeration.class,

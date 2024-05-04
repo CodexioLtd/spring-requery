@@ -18,10 +18,26 @@ import org.springframework.data.jpa.domain.Specification;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
+/**
+ * Configuration class for customizing Swagger-generated API documentation.
+ * This class provides beans that modify the behavior and presentation of API
+ * operations within the Swagger UI, particularly for filtering and
+ * pagination functionality in the application.
+ */
 @Configuration
 public class SwaggerConfig {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
+    /**
+     * Customizes operations in the Swagger UI related to
+     * {@link Specification}-based filtering. This method configures a custom
+     * {@link OperationCustomizer} that adds detailed description and example
+     * for using filter parameters dynamically based on the presence of
+     * {@link Specification} parameters in the method signature.
+     *
+     * @return an {@link OperationCustomizer} for enhancing API operation
+     * documentation where filtering is applicable.
+     */
     @Bean
     public OperationCustomizer customizeFiltering() {
         return (operation, handlerMethod) -> {
@@ -76,6 +92,14 @@ public class SwaggerConfig {
         };
     }
 
+    /**
+     * Customizes Swagger UI documentation for pageable API operations. This
+     * customizer adds parameters for page, size, and sort to operations that
+     * accept a {@link Pageable} argument.
+     *
+     * @return an {@link OperationCustomizer} for enhancing API operation
+     * documentation where pagination is applicable.
+     */
     @Bean
     public OperationCustomizer customizePageable() {
         return (operation, handlerMethod) -> {
@@ -107,6 +131,18 @@ public class SwaggerConfig {
         };
     }
 
+    /**
+     * Attempts to remove a parameter from the Swagger operation based on the
+     * method parameter if it exists. This utility method supports the
+     * customizers by removing default parameter documentation when custom
+     * parameters are added.
+     *
+     * @param operation the Swagger {@link Operation} to modify
+     * @param spec      the {@link MethodParameter} that may need to be
+     *                  removed from Swagger UI documentation
+     * @return {@code true} if the parameter was removed, {@code false}
+     * otherwise
+     */
     private boolean tryRemove(
             Operation operation,
             MethodParameter spec
