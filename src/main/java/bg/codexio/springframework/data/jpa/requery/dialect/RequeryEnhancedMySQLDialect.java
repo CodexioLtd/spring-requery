@@ -1,14 +1,15 @@
-package bg.codexio.springframework.data.jpa.requery.resolver.function;
+package bg.codexio.springframework.data.jpa.requery.dialect;
 
+import bg.codexio.springframework.data.jpa.requery.resolver.function.CaseInsensitiveLikeSQLFunction;
 import org.hibernate.boot.model.FunctionContributions;
-import org.hibernate.dialect.PostgreSQLDialect;
+import org.hibernate.dialect.MySQLDialect;
 
 /**
- * Extends the standard {@link PostgreSQLDialect} and registers a custom
- * function to support case-insensitive LIKE operations.
+ * Extends the standard {@link MySQLDialect} and registers a custom function
+ * to support case-insensitive LIKE operations.
  */
-public class ExtendedPostgresqlDialect
-        extends PostgreSQLDialect {
+public class RequeryEnhancedMySQLDialect
+        extends MySQLDialect {
     @Override
     public void initializeFunctionRegistry(FunctionContributions functionContributions) {
         super.initializeFunctionRegistry(functionContributions);
