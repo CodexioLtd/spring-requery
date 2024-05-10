@@ -187,7 +187,8 @@ public class MyController {
 This section provides detailed examples of both simple and complex filters that you can apply using our filtering
 system. These examples will help you utilize our library to perform dynamic queries effectively.
 
-**Disclaimer** For simplicity the examples include both json format and URL encoded filters
+**Disclaimer!** For simplicity the examples include JSON format filters, but ensure the requests are properly URL
+encoded.
 
 ### Sample Java Entity
 
