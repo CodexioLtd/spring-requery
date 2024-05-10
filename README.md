@@ -1,7 +1,7 @@
 <h1 align="center">Spring Requery</h1>
 
 <p align="center">
-    <img src="./codexio-logo.png" width="300" height="50"/>
+    <img src="./codexio-logo.png" width="555" height="90"/>
     <br/>
     <em>
         May your queries be requested.
