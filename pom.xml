@@ -5,7 +5,7 @@
 
     <groupId>bg.codexio.springframework.data.jpa.requery</groupId>
     <artifactId>requery-core</artifactId>
-    <version>1.0.3-SNAPSHOT</version>
+    <version>1.0.5-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>Codexio Ltd. Unified Request to Query resolver</name>
