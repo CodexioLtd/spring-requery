@@ -175,7 +175,7 @@ public class FilterJsonArgumentResolver
                 this.noFilterSpecification(),
                 startingGroup.groupOperations()[0],
                 genericType,
-                FilterLogicalOperator.AND
+                startingOperator
         );
 
         for (var i = 1; i < startingGroup.groupOperations().length; i++) {
@@ -200,7 +200,7 @@ public class FilterJsonArgumentResolver
         }
 
         var rightSide = this.computeRecursiveRightLeftSideQuery(
-                leftSide,
+                noFilterSpecification(),
                 startingGroup.rightSideOperands()
                              .unaryGroupOperator(),
                 startingGroup.rightSideOperands()
