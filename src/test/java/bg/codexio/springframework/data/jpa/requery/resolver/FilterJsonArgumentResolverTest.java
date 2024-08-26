@@ -1,10 +1,12 @@
 package bg.codexio.springframework.data.jpa.requery.resolver;
 
+import bg.codexio.springframework.data.jpa.requery.adapter.JsonHttpFilterAdapter;
 import bg.codexio.springframework.data.jpa.requery.config.FilterJsonTypeConverterImpl;
 import bg.codexio.springframework.data.jpa.requery.resolver.function.CaseInsensitiveLikeSQLFunction;
 import bg.codexio.springframework.data.jpa.requery.test.objects.ChildMock;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.criteria.*;
+import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -31,6 +33,7 @@ class FilterJsonArgumentResolverTest {
     private MethodParameter methodParameterMock;
     private java.lang.reflect.Parameter reflectParameter;
     private NativeWebRequest nativeWebRequestMock;
+    private HttpServletRequest httpServletRequestMock;
     private ModelAndViewContainer modelAndViewContainerMock;
     private WebDataBinderFactory webDataBinderFactoryMock;
     private FilterJsonArgumentResolver filterJsonArgumentResolverMock;
@@ -107,6 +110,7 @@ class FilterJsonArgumentResolverTest {
     void setup() {
         var objectMapperMock = new ObjectMapper();
         var filterJsonTypeConverterMock = new FilterJsonTypeConverterImpl();
+        var httpFilterAdapterMock = new JsonHttpFilterAdapter(objectMapperMock);
         var mockPath = mock(Path.class);
         var mockExpression = mock(Expression.class);
         var mockPredicate = mock(Predicate.class);
@@ -115,11 +119,12 @@ class FilterJsonArgumentResolverTest {
         this.methodParameterMock = mock(MethodParameter.class);
         this.reflectParameter = mock(java.lang.reflect.Parameter.class);
         this.nativeWebRequestMock = mock(NativeWebRequest.class);
+        this.httpServletRequestMock = mock(HttpServletRequest.class);
         this.modelAndViewContainerMock = mock(ModelAndViewContainer.class);
         this.webDataBinderFactoryMock = mock(WebDataBinderFactory.class);
         this.filterJsonArgumentResolverMock = new FilterJsonArgumentResolver(
-                objectMapperMock,
-                filterJsonTypeConverterMock
+                filterJsonTypeConverterMock,
+                httpFilterAdapterMock
         );
 
         this.criteriaQueryMock = mock(CriteriaQuery.class);
@@ -139,6 +144,7 @@ class FilterJsonArgumentResolverTest {
                 any()
         )).thenReturn(mockExpression);
         when(mockPath.in(any(Collection.class))).thenReturn(mockPredicate);
+        when(this.nativeWebRequestMock.getNativeRequest(HttpServletRequest.class)).thenReturn(this.httpServletRequestMock);
     }
 
     @Test
