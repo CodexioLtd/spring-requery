@@ -84,23 +84,16 @@ public class FilterJsonArgumentResolver
             @NotNull NativeWebRequest webRequest,
             WebDataBinderFactory binderFactory
     ) throws Exception {
-        HttpServletRequest request = webRequest.getNativeRequest(HttpServletRequest.class);
+        var request = webRequest.getNativeRequest(HttpServletRequest.class);
         FilterRequestWrapper filterWrapper = this.httpFilterAdapter.adapt(request);
 
         var genericType =
                 (Class<?>) ((ParameterizedType) parameter.getGenericParameterType()).getActualTypeArguments()[0];
 
-        Specification<Object> specification = this.noFilterSpecification();
-        filterWrapper.ifSimple(simpleFilter -> {
-            getSimpleFilterSpecification(simpleFilter, genericType, specification);
-        }).orComplex(filterGroupRequest -> {
-            getComplexFilterSpecification(filterGroupRequest, genericType, specification);
-        });
 
-        if (specification.equals(this.noFilterSpecification())) {
-            return specification;
-        }
-        return this.noFilterSpecification();
+        return filterWrapper.isSimple(simpleFilter -> getSimpleFilterSpecification(simpleFilter, genericType))
+                .orComplex(complexFilter -> getComplexFilterSpecification(complexFilter, genericType))
+                .or(this::noFilterSpecification);
     }
 
     /**
@@ -120,11 +113,9 @@ public class FilterJsonArgumentResolver
      * recursively builds a composite {@link Specification} based on the
      * logical operations and groupings defined within the filter request.
      *
-     * @param complexFilter The parsed JSON string containing the complex filter
-     *                      criteria.
+     * @param complexFilter The adapted {@link FilterGroupRequest} from the request
      * @param genericType   The entity class type on which the filter
      *                      will be applied.
-     * @param specification
      * @return A {@link Specification} representing the complex filtering
      * criteria.
      * @throws JsonProcessingException If there is an error parsing the JSON
@@ -132,10 +123,9 @@ public class FilterJsonArgumentResolver
      */
     private Specification<Object> getComplexFilterSpecification(
             FilterGroupRequest complexFilter,
-            Class<?> genericType,
-            Specification<Object> specification) {
+            Class<?> genericType) {
         return this.computeRecursiveRightLeftSideQuery(
-                specification,
+                this.noFilterSpecification(),
                 FilterLogicalOperator.AND,
                 complexFilter,
                 genericType
@@ -219,16 +209,15 @@ public class FilterJsonArgumentResolver
      * then transformed into a {@link Specification} based on the type of
      * entity being filtered.
      *
-     * @param simpleRequest The parsed JSON string containing filter criteria.
+     * @param simpleRequest The adapted simple {@link FilterRequest} from the request
      * @param genericType   The class type of the entities being filtered.
-     * @param specification
      * @return A {@link Specification} that represents the filter criteria
      * provided.
      */
     private Specification<Object> getSimpleFilterSpecification(
             List<FilterRequest> simpleRequest,
-            Class<?> genericType,
-            Specification<Object> specification) {
+            Class<?> genericType) {
+        var specification = this.noFilterSpecification();
         for (var filter : simpleRequest) {
             specification = getSpecification(
                     specification,

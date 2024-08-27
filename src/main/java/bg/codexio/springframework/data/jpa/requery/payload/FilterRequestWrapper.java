@@ -1,59 +1,46 @@
 package bg.codexio.springframework.data.jpa.requery.payload;
 
+import org.springframework.data.jpa.domain.Specification;
+
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
-public class FilterRequestWrapper {
-    private List<FilterRequest> filterRequest;
-    private FilterGroupRequest filterGroupRequest;
-
+public record FilterRequestWrapper(
+        Optional<List<FilterRequest>> filterRequests,
+        Optional<FilterGroupRequest> filterGroupRequest) {
+    public FilterRequestWrapper(Optional<List<FilterRequest>> filterRequests, Optional<FilterGroupRequest> filterGroupRequest) {
+        this.filterRequests = filterRequests;
+        this.filterGroupRequest = filterGroupRequest;
+    }
     public FilterRequestWrapper() {
+        this(Optional.empty(), Optional.empty());
     }
 
     public FilterRequestWrapper(List<FilterRequest> filterRequest) {
-        setFilterRequest(filterRequest);
+        this(Optional.ofNullable(filterRequest), Optional.empty());
     }
 
     public FilterRequestWrapper(FilterGroupRequest filterGroupRequest) {
-        setFilterGroupRequest(filterGroupRequest);
+        this(Optional.empty(), Optional.ofNullable(filterGroupRequest));
     }
 
-    public List<FilterRequest> getFilterRequest() {
-        return filterRequest;
-    }
-
-    public void setFilterRequest(List<FilterRequest> filterRequest) {
-        this.filterRequest = filterRequest;
-    }
-
-    public FilterGroupRequest getFilterGroupRequest() {
-        return filterGroupRequest;
-    }
-
-    public void setFilterGroupRequest(FilterGroupRequest filterGroupRequest) {
-        this.filterGroupRequest = filterGroupRequest;
-    }
-
-    /**
-     * If the wrapper contains a simple filter (FilterRequest), execute the provided consumer.
-     *
-     * @param consumer the operation to perform on the simple filter
-     * @return the current instance of FilterRequestWrapper to chain further operations
-     */
-    public FilterRequestWrapper ifSimple(Consumer<List<FilterRequest>> consumer) {
-        Optional.ofNullable(filterRequest).ifPresent(consumer);
+    public FilterRequestWrapper isSimple(Function<List<FilterRequest>, Specification<Object>> simpleSpecFunction) {
+        if (filterRequests.isPresent() && !filterRequests.get().isEmpty()) {
+            simpleSpecFunction.apply(filterRequests.get());
+        }
         return this;
     }
 
-    /**
-     * If the wrapper contains a complex filter (FilterGroupRequest), execute the provided consumer.
-     *
-     * @param consumer the operation to perform on the complex filter
-     * @return the current instance of FilterRequestWrapper to chain further operations
-     */
-    public FilterRequestWrapper orComplex(Consumer<FilterGroupRequest> consumer) {
-        Optional.ofNullable(filterGroupRequest).ifPresent(consumer);
+    public FilterRequestWrapper orComplex(Function<FilterGroupRequest, Specification<Object>> complexSpecFunction) {
+        if (filterGroupRequest.isPresent()) {
+            complexSpecFunction.apply(filterGroupRequest.get());
+        }
         return this;
+    }
+
+    public Specification<Object> or(Supplier<Specification<Object>> defaultSpecSupplier) {
+        return defaultSpecSupplier.get();
     }
 }
