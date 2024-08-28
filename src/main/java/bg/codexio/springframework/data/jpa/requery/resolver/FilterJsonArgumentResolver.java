@@ -85,7 +85,7 @@ public class FilterJsonArgumentResolver
             WebDataBinderFactory binderFactory
     ) throws Exception {
         var request = webRequest.getNativeRequest(HttpServletRequest.class);
-        FilterRequestWrapper filterWrapper = this.httpFilterAdapter.adapt(request);
+        FilterRequestWrapper<Specification<Object>> filterWrapper = this.httpFilterAdapter.adapt(request);
 
         var genericType =
                 (Class<?>) ((ParameterizedType) parameter.getGenericParameterType()).getActualTypeArguments()[0];

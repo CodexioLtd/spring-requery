@@ -7,5 +7,5 @@ import jakarta.servlet.http.HttpServletRequest;
 public interface HttpFilterAdapter {
     boolean supports(HttpServletRequest req);
 
-    FilterRequestWrapper adapt(HttpServletRequest req) throws JsonProcessingException;
+    <T> FilterRequestWrapper<T> adapt(HttpServletRequest req) throws JsonProcessingException;
 }

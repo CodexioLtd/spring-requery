@@ -27,7 +27,7 @@ public class JsonHttpFilterAdapter implements HttpFilterAdapter {
     }
 
     @Override
-    public FilterRequestWrapper adapt(HttpServletRequest webRequest) throws JsonProcessingException {
+    public <T> FilterRequestWrapper<T> adapt(HttpServletRequest webRequest) throws JsonProcessingException {
         var filterJson = webRequest.getParameter("filter");
         var complexFilterJson = webRequest.getParameter("complexFilter");
 
@@ -36,28 +36,28 @@ public class JsonHttpFilterAdapter implements HttpFilterAdapter {
         } else if (complexFilterJson != null) {
             return constructComplexFilterWrapper(complexFilterJson);
         } else {
-            return new FilterRequestWrapper();
+            return new FilterRequestWrapper<>();
         }
     }
 
-    private FilterRequestWrapper constructSimpleFilterWrapper(String filterJson) throws JsonProcessingException {
+    private <T> FilterRequestWrapper<T> constructSimpleFilterWrapper(String filterJson) throws JsonProcessingException {
         if (!filterJson.startsWith("[")) {
             var filterRequest = this.objectMapper.readValue(
                     filterJson,
                     FilterRequest.class
             );
-            return new FilterRequestWrapper(List.of(filterRequest));
+            return new FilterRequestWrapper<>(List.of(filterRequest));
         }
 
-        return new FilterRequestWrapper(List.of(objectMapper.readValue(filterJson, FilterRequest[].class)));
+        return new FilterRequestWrapper<>(List.of(objectMapper.readValue(filterJson, FilterRequest[].class)));
 
     }
 
-    private FilterRequestWrapper constructComplexFilterWrapper(String complexFilterJson) throws JsonProcessingException {
+    private <T> FilterRequestWrapper<T> constructComplexFilterWrapper(String complexFilterJson) throws JsonProcessingException {
         FilterGroupRequest filterGroupRequest = this.objectMapper.readValue(
                 complexFilterJson,
                 FilterGroupRequest.class
         );
-        return new FilterRequestWrapper(filterGroupRequest);
+        return new FilterRequestWrapper<>(filterGroupRequest);
     }
 }

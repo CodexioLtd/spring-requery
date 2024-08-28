@@ -11,13 +11,13 @@ public class GraphQLHttpFilterAdapter implements HttpFilterAdapter {
     }
 
     @Override
-    public FilterRequestWrapper adapt(HttpServletRequest request) {
+    public <T> FilterRequestWrapper<T> adapt(HttpServletRequest request) {
         if (request.getMethod().equals("GET")) {
-            return new FilterRequestWrapper();
+            return new FilterRequestWrapper<>();
         } else if (request.getMethod().equals("POST")) {
-            return new FilterRequestWrapper();
+            return new FilterRequestWrapper<>();
         } else {
-            return new FilterRequestWrapper();
+            return new FilterRequestWrapper<>();
         }
     }
 }
