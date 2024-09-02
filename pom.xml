@@ -49,6 +49,7 @@
         <maven.surefire.plugin.version>3.2.5</maven.surefire.plugin.version>
         <junit.version>5.10.1</junit.version>
         <mockito.version>5.11.0</mockito.version>
+        <graphql.version>22.2</graphql.version>
 
         <nexus.plugin.version>1.6.13</nexus.plugin.version>
         <gpg.plugin.version>3.1.0</gpg.plugin.version>
@@ -121,6 +122,12 @@
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
             <version>${mockito.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.graphql-java</groupId>
+            <artifactId>graphql-java</artifactId>
+            <version>${graphql.version}</version>
         </dependency>
 
     </dependencies>
