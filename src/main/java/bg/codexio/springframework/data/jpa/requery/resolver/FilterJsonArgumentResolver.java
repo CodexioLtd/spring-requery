@@ -5,7 +5,6 @@ import bg.codexio.springframework.data.jpa.requery.config.FilterJsonTypeConverte
 import bg.codexio.springframework.data.jpa.requery.payload.FilterGroupRequest;
 import bg.codexio.springframework.data.jpa.requery.payload.FilterLogicalOperator;
 import bg.codexio.springframework.data.jpa.requery.payload.FilterRequest;
-import bg.codexio.springframework.data.jpa.requery.payload.FilterRequestWrapper;
 import bg.codexio.springframework.data.jpa.requery.resolver.function.CaseInsensitiveLikeSQLFunction;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import jakarta.persistence.criteria.CriteriaBuilder;
@@ -85,7 +84,7 @@ public class FilterJsonArgumentResolver
             WebDataBinderFactory binderFactory
     ) throws Exception {
         var request = webRequest.getNativeRequest(HttpServletRequest.class);
-        FilterRequestWrapper<Specification<Object>> filterWrapper = this.httpFilterAdapter.adapt(request);
+        var filterWrapper = this.httpFilterAdapter.adapt(request);
 
         var genericType =
                 (Class<?>) ((ParameterizedType) parameter.getGenericParameterType()).getActualTypeArguments()[0];

@@ -25,7 +25,7 @@ public class GraphQLDefaultComplexFilterAdapter implements GraphQLComplexFilterA
 
     @Override
     public <T> FilterRequestWrapper<T> adapt(String complexFilterJson) throws JsonProcessingException {
-        FilterGroupRequest filterGroupRequest = this.objectMapper.readValue(
+        var filterGroupRequest = this.objectMapper.readValue(
                 complexFilterJson,
                 FilterGroupRequest.class
         );

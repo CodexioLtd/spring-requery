@@ -4,17 +4,15 @@ import bg.codexio.springframework.data.jpa.requery.payload.FilterOperation;
 import bg.codexio.springframework.data.jpa.requery.payload.FilterRequest;
 import bg.codexio.springframework.data.jpa.requery.payload.FilterRequestWrapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import graphql.language.*;
 import graphql.parser.Parser;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Component;
 
-import java.io.BufferedReader;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.regex.Pattern;
 
 @Component
 public class GraphQLHttpFilterAdapter implements HttpFilterAdapter {
@@ -48,21 +46,13 @@ public class GraphQLHttpFilterAdapter implements HttpFilterAdapter {
 
     private <T> FilterRequestWrapper<T> processGetRequest(HttpServletRequest request) {
         try {
-            String query = request.getParameter("query");
+            var query = request.getParameter("query");
 
-            // Check if the query has a complex filter argument
-            boolean isComplex = queryHasFilterArgument(query);
-
-            if (isComplex) {
-                // Extract the filter body from the query
-                String filterBody = extractFilterBody(query);
-
-                // Pass the filter body to the complex filter adapter
-                return graphQLComplexFilterAdapter.adapt(filterBody);
+            var extractedFilter = extractFilterBody(query);
+            if (extractedFilter.isPresent()) {
+                return graphQLComplexFilterAdapter.adapt(extractedFilter.get());
             } else {
-                // Simple filter handling
-                List<FilterRequest> filterRequests = parseGraphQLQuery(query);
-                return new FilterRequestWrapper<>(filterRequests);
+                return new FilterRequestWrapper<>(parseGraphQLQuery(query));
             }
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
@@ -71,26 +61,25 @@ public class GraphQLHttpFilterAdapter implements HttpFilterAdapter {
 
     private <T> FilterRequestWrapper<T> processPostRequest(HttpServletRequest request) {
         try {
-            StringBuilder requestBody = new StringBuilder();
-            BufferedReader reader = request.getReader();
+            var requestBody = new StringBuilder();
+            var reader = request.getReader();
             String line;
             while ((line = reader.readLine()) != null) {
                 requestBody.append(line);
             }
 
-            Map<String, Object> jsonMap = objectMapper.readValue(requestBody.toString(), Map.class);
+            var jsonMap = objectMapper.readValue(
+                    requestBody.toString(),
+                    new TypeReference<Map<String, Object>>() {
+                    }
+            );
 
-            String query = (String) jsonMap.get("query");
-
-            boolean isComplex = queryHasFilterArgument(query);
-
-            if (isComplex) {
-                String extractedFilter = extractFilterBody(query);
-                return graphQLComplexFilterAdapter.adapt(extractedFilter);
-
+            var query = (String) jsonMap.get("query");
+            var extractedFilter = extractFilterBody(query);
+            if (extractedFilter.isPresent()) {
+                return graphQLComplexFilterAdapter.adapt(extractedFilter.get());
             } else {
-                List<FilterRequest> filterRequests = parseGraphQLQuery(query);
-                return new FilterRequestWrapper<>(filterRequests);
+                return new FilterRequestWrapper<>(parseGraphQLQuery(query));
             }
         } catch (Exception e) {
             System.out.println(e.getMessage());
@@ -99,28 +88,28 @@ public class GraphQLHttpFilterAdapter implements HttpFilterAdapter {
     }
 
     private List<FilterRequest> parseGraphQLQuery(String query) {
-        Parser parser = new Parser();
-        Document document = parser.parseDocument(query);
+        var parser = new Parser();
+        var document = parser.parseDocument(query);
 
         return processDocument(document);
     }
 
     private List<FilterRequest> processDocument(Document document) {
-        List<FilterRequest> filterRequests = new ArrayList<>();
-        List<OperationDefinition> operationDefinitionList = document.getDefinitionsOfType(OperationDefinition.class);
-        for (OperationDefinition operation : operationDefinitionList) {
+        var filterRequests = new ArrayList<FilterRequest>();
+        var operationDefinitionList = document.getDefinitionsOfType(OperationDefinition.class);
+        for (var operation : operationDefinitionList) {
             if (!operation.getOperation().equals(OperationDefinition.Operation.QUERY)) {
                 continue;
             }
-            for (Field field : operation.getSelectionSet().getSelectionsOfType(Field.class)) {
-                for (Argument argument : field.getArguments()) {
-                    Value<?> value = argument.getValue();
-                    Object extractedValue = extractValue(value);
+            for (var field : operation.getSelectionSet().getSelectionsOfType(Field.class)) {
+                for (var argument : field.getArguments()) {
+                    var value = argument.getValue();
+                    var extractedValue = extractValue(value);
                     if (extractedValue instanceof Map) {
                         handleMapValue(argument.getName(), extractedValue, filterRequests);
                         continue;
                     }
-                    FilterRequest filterRequest = new FilterRequest(
+                    var filterRequest = new FilterRequest(
                             extractName(argument.getName()),
                             extractedValue,
                             getOperationFromArgument(argument.getName())
@@ -139,13 +128,13 @@ public class GraphQLHttpFilterAdapter implements HttpFilterAdapter {
     ) {
         if (extractedValue instanceof Map) {
             for (Map.Entry<String, Object> entry : ((Map<String, Object>) extractedValue).entrySet()) {
-                Value<?> nestedValue = (Value<?>) entry.getValue();
-                Object nestedExtractedValue = extractValue(nestedValue);
+                var nestedValue = (Value<?>) entry.getValue();
+                var nestedExtractedValue = extractValue(nestedValue);
                 if (nestedExtractedValue instanceof Map) {
                     handleMapValue(entry.getKey(), nestedExtractedValue, filterRequests);
                 }
 
-                FilterRequest filterRequest = new FilterRequest(
+                var filterRequest = new FilterRequest(
                         containingObjectName.concat(".").concat(extractName(entry.getKey())),
                         nestedExtractedValue,
                         getOperationFromArgument(entry.getKey())
@@ -173,7 +162,7 @@ public class GraphQLHttpFilterAdapter implements HttpFilterAdapter {
                 "_contains_caseins"
         };
 
-        for (String suffix : suffixes) {
+        for (var suffix : suffixes) {
             if (name.endsWith(suffix)) {
                 return name.substring(0, name.length() - suffix.length());
             }
@@ -203,8 +192,8 @@ public class GraphQLHttpFilterAdapter implements HttpFilterAdapter {
     }
 
     private Map<String, Object> handleComplexObject(ObjectValue value) {
-        Map<String, Object> result = new HashMap<>();
-        for (ObjectField field : value.getObjectFields()) {
+        var result = new HashMap<String, Object>();
+        for (var field : value.getObjectFields()) {
             result.put(field.getName(), field.getValue());
         }
         return result;
@@ -243,29 +232,50 @@ public class GraphQLHttpFilterAdapter implements HttpFilterAdapter {
         return FilterOperation.EQ;
     }
 
+    private Optional<String> extractFilterBody(String query) {
+        // Use regex to extract the contents of the filter argument
+        var pattern = Pattern.compile("filter\\s*:\\s*(\\{.*\\})", Pattern.DOTALL);
+        var matcher = pattern.matcher(query);
 
-    //TODO: Has to be fixed!
-    private boolean queryHasFilterArgument(String query) {
-        return query.matches(".*\\b\\w+\\s*\\(.*filter\\s*:.*\\).*");
-    }
+        if (!matcher.find()) {
+            return Optional.empty();
+        }
+        query = matcher.group(1);
+        var filter = new StringBuilder();
+        var quoteCounter = 0;
+        var braceCounter = 0;
+        var started = false;
+        for (var i = 0; i < query.length(); i++) {
+            if (started && quoteCounter == 0 && braceCounter == 0) {
+                break;
+            }
 
-    private String extractFilterBody(String query) {
-        Parser parser = new Parser();
-        Document document = parser.parseDocument(query);
+            filter.append(query.charAt(i));
 
-        List<OperationDefinition> operationDefinitionList = document.getDefinitionsOfType(OperationDefinition.class);
-        for (OperationDefinition operation : operationDefinitionList) {
-            if (!operation.getOperation().equals(OperationDefinition.Operation.QUERY)) {
+            if (query.charAt(i) == '"' && query.charAt(i - 1) != '\\' && quoteCounter > 0) {
+                started = true;
+                quoteCounter--;
                 continue;
             }
-            for (Field field : operation.getSelectionSet().getSelectionsOfType(Field.class)) {
-                for (Argument argument : field.getArguments()) {
-                    if (argument.getName().equalsIgnoreCase("filter")) {
-                        return String.valueOf(argument.getValue());
-                    }
-                }
+
+            if (query.charAt(i) == '"' && query.charAt(i - 1) != '\\' && quoteCounter == 0) {
+                started = true;
+                quoteCounter++;
+                continue;
+            }
+
+            if (query.charAt(i) == '{' && quoteCounter == 0) {
+                started = true;
+                braceCounter++;
+                continue;
+            }
+
+            if (query.charAt(i) == '}' && quoteCounter == 0) {
+                started = true;
+                braceCounter--;
+                continue;
             }
         }
-        return "";
+        return Optional.of(filter.toString());
     }
 }
