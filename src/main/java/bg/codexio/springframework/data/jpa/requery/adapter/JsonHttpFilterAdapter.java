@@ -46,6 +46,9 @@ public class JsonHttpFilterAdapter implements HttpFilterAdapter {
                     filterJson,
                     FilterRequest.class
             );
+            if (filterRequest == null) {
+                return new FilterRequestWrapper<>();
+            }
             return new FilterRequestWrapper<>(List.of(filterRequest));
         }
 

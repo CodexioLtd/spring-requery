@@ -3,7 +3,6 @@ package bg.codexio.springframework.data.jpa.requery.adapter;
 import bg.codexio.springframework.data.jpa.requery.payload.FilterOperation;
 import bg.codexio.springframework.data.jpa.requery.payload.FilterRequest;
 import bg.codexio.springframework.data.jpa.requery.payload.FilterRequestWrapper;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import graphql.language.*;
@@ -54,8 +53,9 @@ public class GraphQLHttpFilterAdapter implements HttpFilterAdapter {
             } else {
                 return new FilterRequestWrapper<>(parseGraphQLQuery(query));
             }
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+            return new FilterRequestWrapper<>();
         }
     }
 
