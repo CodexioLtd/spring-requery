@@ -65,7 +65,7 @@ public class JsonHttpFilterAdapter implements HttpFilterAdapter {
     }
 
     private <T> FilterRequestWrapper<T> constructComplexFilterWrapper(String complexFilterJson) throws JsonProcessingException {
-        FilterGroupRequest filterGroupRequest = this.objectMapper.readValue(
+        var filterGroupRequest = this.objectMapper.readValue(
                 complexFilterJson,
                 FilterGroupRequest.class
         );

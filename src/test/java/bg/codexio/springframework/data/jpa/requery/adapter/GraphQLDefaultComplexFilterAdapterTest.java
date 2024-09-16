@@ -1,6 +1,7 @@
 package bg.codexio.springframework.data.jpa.requery.adapter;
 
 import bg.codexio.springframework.data.jpa.requery.payload.FilterGroupRequest;
+import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
@@ -24,7 +25,7 @@ class GraphQLDefaultComplexFilterAdapterTest {
 
     @Test
     void testSupportsReturnsTrue() {
-        boolean result = adapter.supports(mock(HttpServletRequest.class));
+        var result = adapter.supports(mock(HttpServletRequest.class));
 
         assertTrue(result);
     }
@@ -43,9 +44,8 @@ class GraphQLDefaultComplexFilterAdapterTest {
     @Test
     void testAdaptInvalidJsonThrowsJsonProcessingException() throws JsonProcessingException {
         // Arrange
-        String invalidJson = "invalid json";
-        when(objectMapper.readValue(invalidJson, FilterGroupRequest.class)).thenThrow(new JsonProcessingException("Invalid JSON") {
-        });
+        var invalidJson = "invalid json";
+        when(objectMapper.readValue(invalidJson, FilterGroupRequest.class)).thenThrow(new JsonParseException("Invalid JSON"));
 
         // Act & Assert
         assertThrows(JsonProcessingException.class, () -> adapter.adapt(invalidJson));

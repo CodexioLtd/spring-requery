@@ -20,7 +20,7 @@ class JsonHttpFilterAdapterTest {
 
     @Test
     void testSupportsReturnsTrue() {
-        boolean result = adapter.supports(mock(HttpServletRequest.class));
+        var result = adapter.supports(mock(HttpServletRequest.class));
 
         assertTrue(result);
     }
@@ -28,17 +28,17 @@ class JsonHttpFilterAdapterTest {
     @Test
     void testAdaptSingleConditionSimpleFilter() throws JsonProcessingException {
         // Arrange
-        String filterJson = "{\"field\": \"firstName\", \"operation\": \"EQ\", \"value\": \"John\"}";
-        HttpServletRequest request = mock(HttpServletRequest.class);
+        var filterJson = "{\"field\": \"firstName\", \"operation\": \"EQ\", \"value\": \"John\"}";
+        var request = mock(HttpServletRequest.class);
         when(request.getParameter("filter")).thenReturn(filterJson);
 
-        FilterRequest expectedFilterRequest = new FilterRequest("firstName", "John", FilterOperation.EQ);
-        FilterRequestWrapper<FilterRequest> expectedWrapper = new FilterRequestWrapper<>(List.of(expectedFilterRequest));
+        var expectedFilterRequest = new FilterRequest("firstName", "John", FilterOperation.EQ);
+        var expectedWrapper = new FilterRequestWrapper<>(List.of(expectedFilterRequest));
 
         when(objectMapper.readValue(filterJson, FilterRequest.class)).thenReturn(expectedFilterRequest);
 
         // Act
-        FilterRequestWrapper<?> result = adapter.adapt(request);
+        var result = adapter.adapt(request);
 
         // Assert
         assertEquals(expectedWrapper, result);
@@ -47,20 +47,20 @@ class JsonHttpFilterAdapterTest {
     @Test
     void testAdaptMultipleConditionsSimpleFilter() throws JsonProcessingException {
         // Arrange
-        String filterJson = "[{\"field\": \"lastName\", \"operation\": \"CONTAINS\", \"value\": \"Doe\"}, {\"field\": \"age\", \"operation\": \"GTE\", \"value\": 25}]";
-        HttpServletRequest request = mock(HttpServletRequest.class);
+        var filterJson = "[{\"field\": \"lastName\", \"operation\": \"CONTAINS\", \"value\": \"Doe\"}, {\"field\": \"age\", \"operation\": \"GTE\", \"value\": 25}]";
+        var request = mock(HttpServletRequest.class);
         when(request.getParameter("filter")).thenReturn(filterJson);
 
-        FilterRequest[] filterRequests = new FilterRequest[]{
+        var filterRequests = new FilterRequest[]{
                 new FilterRequest("lastName", "Doe", FilterOperation.CONTAINS),
                 new FilterRequest("age", 25, FilterOperation.GTE)
         };
-        FilterRequestWrapper<FilterRequest> expectedWrapper = new FilterRequestWrapper<>(List.of(filterRequests));
+        var expectedWrapper = new FilterRequestWrapper<>(List.of(filterRequests));
 
         when(objectMapper.readValue(filterJson, FilterRequest[].class)).thenReturn(filterRequests);
 
         // Act
-        FilterRequestWrapper<?> result = adapter.adapt(request);
+        var result = adapter.adapt(request);
 
         // Assert
         assertEquals(expectedWrapper, result);
@@ -69,18 +69,18 @@ class JsonHttpFilterAdapterTest {
     @Test
     void testAdaptComplexFilter() throws JsonProcessingException {
         // Arrange
-        String complexFilterJson = "{ \"groupOperations\": [{\"field\": \"email\", \"operation\": \"CONTAINS\", \"value\": \"example.com\"}], \"nonPriorityGroupOperators\": [\"AND\"], \"rightSideOperands\": { \"unaryGroupOperator\": \"OR\", \"unaryGroup\": { \"groupOperations\": [{\"field\": \"firstName\", \"operation\": \"IN\", \"value\": [\"John\", \"Jane\"]}, {\"field\": \"lastName\", \"operation\": \"BEGINS_WITH_CASEINS\", \"value\": \"Doe\"}], \"nonPriorityGroupOperators\": [\"OR\"], \"rightSideOperands\": { \"unaryGroupOperator\": \"AND\", \"unaryGroup\": { \"groupOperations\": [{\"field\": \"age\", \"operation\": \"GT\", \"value\": 25}], \"nonPriorityGroupOperators\": [] } } } }";
-        HttpServletRequest request = mock(HttpServletRequest.class);
+        var complexFilterJson = "{ \"groupOperations\": [{\"field\": \"email\", \"operation\": \"CONTAINS\", \"value\": \"example.com\"}], \"nonPriorityGroupOperators\": [\"AND\"], \"rightSideOperands\": { \"unaryGroupOperator\": \"OR\", \"unaryGroup\": { \"groupOperations\": [{\"field\": \"firstName\", \"operation\": \"IN\", \"value\": [\"John\", \"Jane\"]}, {\"field\": \"lastName\", \"operation\": \"BEGINS_WITH_CASEINS\", \"value\": \"Doe\"}], \"nonPriorityGroupOperators\": [\"OR\"], \"rightSideOperands\": { \"unaryGroupOperator\": \"AND\", \"unaryGroup\": { \"groupOperations\": [{\"field\": \"age\", \"operation\": \"GT\", \"value\": 25}], \"nonPriorityGroupOperators\": [] } } } }";
+        var request = mock(HttpServletRequest.class);
         when(request.getParameter("complexFilter")).thenReturn(complexFilterJson);
 
         // Define the nested FilterGroupRequest structure
-        FilterGroupRequest innerMostGroupRequest = new FilterGroupRequest(
+        var innerMostGroupRequest = new FilterGroupRequest(
                 new FilterRequest[]{new FilterRequest("age", 25, FilterOperation.GT)},
                 new FilterLogicalOperator[]{},
                 null  // No rightSideOperands for the innermost group
         );
 
-        FilterGroupRequest middleGroupRequest = new FilterGroupRequest(
+        var middleGroupRequest = new FilterGroupRequest(
                 new FilterRequest[]{
                         new FilterRequest("firstName", List.of("John", "Jane"), FilterOperation.IN),
                         new FilterRequest("lastName", "Doe", FilterOperation.BEGINS_WITH_CASEINS)
@@ -89,7 +89,7 @@ class JsonHttpFilterAdapterTest {
                 new UnaryGroupRequest(innerMostGroupRequest, FilterLogicalOperator.AND)
         );
 
-        FilterGroupRequest outerGroupRequest = new FilterGroupRequest(
+        var outerGroupRequest = new FilterGroupRequest(
                 new FilterRequest[]{
                         new FilterRequest("email", "example.com", FilterOperation.CONTAINS)
                 },
@@ -97,11 +97,11 @@ class JsonHttpFilterAdapterTest {
                 new UnaryGroupRequest(middleGroupRequest, FilterLogicalOperator.OR)
         );
 
-        FilterRequestWrapper<FilterGroupRequest> expectedWrapper = new FilterRequestWrapper<>(outerGroupRequest);
+        var expectedWrapper = new FilterRequestWrapper<>(outerGroupRequest);
         when(objectMapper.readValue(complexFilterJson, FilterGroupRequest.class)).thenReturn(outerGroupRequest);
 
         // Act
-        FilterRequestWrapper<?> result = adapter.adapt(request);
+        var result = adapter.adapt(request);
 
         // Assert
         assertEquals(expectedWrapper, result);
@@ -110,12 +110,12 @@ class JsonHttpFilterAdapterTest {
     @Test
     void testAdaptNoFilterParameters() throws JsonProcessingException {
         // Arrange
-        HttpServletRequest request = mock(HttpServletRequest.class);
+        var request = mock(HttpServletRequest.class);
         when(request.getParameter("filter")).thenReturn(null);
         when(request.getParameter("complexFilter")).thenReturn(null);
 
         // Act
-        FilterRequestWrapper<?> result = adapter.adapt(request);
+        var result = adapter.adapt(request);
 
         // Assert
         assertEquals(new FilterRequestWrapper<>(), result);
@@ -124,12 +124,12 @@ class JsonHttpFilterAdapterTest {
     @Test
     void testAdaptInvalidFilterParameter() throws JsonProcessingException {
         // Arrange
-        HttpServletRequest request = mock(HttpServletRequest.class);
+        var request = mock(HttpServletRequest.class);
         when(request.getParameter("filter")).thenReturn("invalid filter");
         when(request.getParameter("complexFilter")).thenReturn(null);
 
         // Act
-        FilterRequestWrapper<?> result = adapter.adapt(request);
+        var result = adapter.adapt(request);
 
         // Assert
         assertEquals(new FilterRequestWrapper<>(), result);
