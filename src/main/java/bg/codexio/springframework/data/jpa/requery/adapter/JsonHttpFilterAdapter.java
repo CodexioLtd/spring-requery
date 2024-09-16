@@ -6,6 +6,8 @@ import bg.codexio.springframework.data.jpa.requery.payload.FilterRequestWrapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.stereotype.Component;
 
@@ -14,6 +16,7 @@ import java.util.List;
 @Component
 @ConditionalOnMissingBean(HttpFilterAdapter.class)
 public class JsonHttpFilterAdapter implements HttpFilterAdapter {
+    private static final Logger logger = LoggerFactory.getLogger(JsonHttpFilterAdapter.class);
     private final ObjectMapper objectMapper;
 
     public JsonHttpFilterAdapter(ObjectMapper objectMapper) {
@@ -27,15 +30,20 @@ public class JsonHttpFilterAdapter implements HttpFilterAdapter {
     }
 
     @Override
-    public <T> FilterRequestWrapper<T> adapt(HttpServletRequest webRequest) throws JsonProcessingException {
+    public <T> FilterRequestWrapper<T> adapt(HttpServletRequest webRequest) {
         var filterJson = webRequest.getParameter("filter");
         var complexFilterJson = webRequest.getParameter("complexFilter");
 
-        if (filterJson != null) {
-            return constructSimpleFilterWrapper(filterJson);
-        } else if (complexFilterJson != null) {
-            return constructComplexFilterWrapper(complexFilterJson);
-        } else {
+        try {
+            if (filterJson != null) {
+                return constructSimpleFilterWrapper(filterJson);
+            } else if (complexFilterJson != null) {
+                return constructComplexFilterWrapper(complexFilterJson);
+            } else {
+                return new FilterRequestWrapper<>();
+            }
+        } catch (JsonProcessingException e) {
+            logger.error(e.getMessage(), e);
             return new FilterRequestWrapper<>();
         }
     }
