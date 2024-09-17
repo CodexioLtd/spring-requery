@@ -89,10 +89,15 @@ public class FilterJsonArgumentResolver
         var genericType =
                 (Class<?>) ((ParameterizedType) parameter.getGenericParameterType()).getActualTypeArguments()[0];
 
-
-        return filterWrapper.isSimple(simpleFilter -> getSimpleFilterSpecification(simpleFilter, genericType))
-                .orComplex(complexFilter -> getComplexFilterSpecification(complexFilter, genericType))
-                .or(this::noFilterSpecification);
+        return filterWrapper.isSimple(simpleFilter -> getSimpleFilterSpecification(
+                                    simpleFilter,
+                                    genericType
+                            ))
+                            .orComplex(complexFilter -> getComplexFilterSpecification(
+                                    complexFilter,
+                                    genericType
+                            ))
+                            .or(this::noFilterSpecification);
     }
 
     /**
@@ -112,7 +117,8 @@ public class FilterJsonArgumentResolver
      * recursively builds a composite {@link Specification} based on the
      * logical operations and groupings defined within the filter request.
      *
-     * @param complexFilter The adapted {@link FilterGroupRequest} from the request
+     * @param complexFilter The adapted {@link FilterGroupRequest} from the
+     *                      request
      * @param genericType   The entity class type on which the filter
      *                      will be applied.
      * @return A {@link Specification} representing the complex filtering
@@ -122,7 +128,8 @@ public class FilterJsonArgumentResolver
      */
     private Specification<Object> getComplexFilterSpecification(
             FilterGroupRequest complexFilter,
-            Class<?> genericType) {
+            Class<?> genericType
+    ) {
         return this.computeRecursiveRightLeftSideQuery(
                 this.noFilterSpecification(),
                 FilterLogicalOperator.AND,
@@ -208,14 +215,16 @@ public class FilterJsonArgumentResolver
      * then transformed into a {@link Specification} based on the type of
      * entity being filtered.
      *
-     * @param simpleRequest The adapted simple {@link FilterRequest} from the request
+     * @param simpleRequest The adapted simple {@link FilterRequest} from the
+     *                     request
      * @param genericType   The class type of the entities being filtered.
      * @return A {@link Specification} that represents the filter criteria
      * provided.
      */
     private Specification<Object> getSimpleFilterSpecification(
             List<FilterRequest> simpleRequest,
-            Class<?> genericType) {
+            Class<?> genericType
+    ) {
         var specification = this.noFilterSpecification();
         for (var filter : simpleRequest) {
             specification = getSpecification(

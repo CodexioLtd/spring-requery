@@ -10,7 +10,8 @@ import org.springframework.stereotype.Component;
 
 @Component
 @ConditionalOnMissingBean(GraphQLComplexFilterAdapter.class)
-public class GraphQLDefaultComplexFilterAdapter implements GraphQLComplexFilterAdapter {
+public class GraphQLDefaultComplexFilterAdapter
+        implements GraphQLComplexFilterAdapter {
     private final ObjectMapper objectMapper;
 
     public GraphQLDefaultComplexFilterAdapter(ObjectMapper objectMapper) {
@@ -24,11 +25,13 @@ public class GraphQLDefaultComplexFilterAdapter implements GraphQLComplexFilterA
     }
 
     @Override
-    public <T> FilterRequestWrapper<T> adapt(String complexFilterJson) throws JsonProcessingException {
+    public <T> FilterRequestWrapper<T> adapt(String complexFilterJson)
+            throws JsonProcessingException {
         var filterGroupRequest = this.objectMapper.readValue(
                 complexFilterJson,
                 FilterGroupRequest.class
         );
+
         return new FilterRequestWrapper<>(filterGroupRequest);
     }
 }

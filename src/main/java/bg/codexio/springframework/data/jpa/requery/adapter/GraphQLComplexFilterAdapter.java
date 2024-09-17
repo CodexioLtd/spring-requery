@@ -7,5 +7,6 @@ import jakarta.servlet.http.HttpServletRequest;
 public interface GraphQLComplexFilterAdapter {
     boolean supports(HttpServletRequest req);
 
-    <T> FilterRequestWrapper<T> adapt(String complexFilterJson) throws JsonProcessingException;
+    <T> FilterRequestWrapper<T> adapt(String complexFilterJson)
+            throws JsonProcessingException;
 }

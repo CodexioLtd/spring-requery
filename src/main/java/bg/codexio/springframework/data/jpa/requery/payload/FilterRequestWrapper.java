@@ -14,34 +14,50 @@ public record FilterRequestWrapper<T>(
     }
 
     public FilterRequestWrapper() {
-        this(Optional.empty(), Optional.empty(), Optional.empty());
+        this(
+                Optional.empty(),
+                Optional.empty(),
+                Optional.empty()
+        );
     }
 
     public FilterRequestWrapper(List<FilterRequest> filterRequest) {
-        this(Optional.ofNullable(filterRequest), Optional.empty(), Optional.empty());
+        this(
+                Optional.ofNullable(filterRequest),
+                Optional.empty(),
+                Optional.empty()
+        );
     }
 
     public FilterRequestWrapper(FilterGroupRequest filterGroupRequest) {
-        this(Optional.empty(), Optional.ofNullable(filterGroupRequest), Optional.empty());
+        this(
+                Optional.empty(),
+                Optional.ofNullable(filterGroupRequest),
+                Optional.empty()
+        );
     }
 
     public FilterRequestWrapper<T> isSimple(Function<List<FilterRequest>, T> simpleSpecFunction) {
-        if (filterRequests.isPresent() && !filterRequests.get().isEmpty()) {
-            var result = filterRequests.map(simpleSpecFunction);
-            return new FilterRequestWrapper<T>(filterRequests, filterGroupRequest, result);
-        }
-        return this;
+        return this.filterRequests.filter(reqs -> !reqs.isEmpty())
+                                  .map(reqs -> new FilterRequestWrapper<T>(
+                                          this.filterRequests,
+                                          this.filterGroupRequest,
+                                          Optional.ofNullable(simpleSpecFunction.apply(reqs))
+                                  ))
+                                  .orElse(this);
     }
 
     public FilterRequestWrapper<T> orComplex(Function<FilterGroupRequest, T> complexSpecFunction) {
-        if (filterGroupRequest.isPresent()) {
-            var result = filterGroupRequest.map(complexSpecFunction);
-            return new FilterRequestWrapper<T>(filterRequests, filterGroupRequest, result);
-        }
-        return this;
+        return this.filterGroupRequest.map(groupReq -> new FilterRequestWrapper<T>(
+                           this.filterRequests,
+                           this.filterGroupRequest,
+                           Optional.ofNullable(complexSpecFunction.apply(groupReq))
+                   ))
+                                      .orElse(this);
     }
 
+
     public T or(Supplier<T> defaultSupplier) {
-        return result.orElseGet(defaultSupplier);
+        return this.result.orElseGet(defaultSupplier);
     }
 }

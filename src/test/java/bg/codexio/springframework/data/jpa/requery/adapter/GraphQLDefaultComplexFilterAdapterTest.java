@@ -19,35 +19,54 @@ class GraphQLDefaultComplexFilterAdapterTest {
 
     @BeforeEach
     void setUp() {
-        objectMapper = mock(ObjectMapper.class);
-        adapter = new GraphQLDefaultComplexFilterAdapter(objectMapper);
+        this.objectMapper = mock(ObjectMapper.class);
+        this.adapter =
+                new GraphQLDefaultComplexFilterAdapter(this.objectMapper);
     }
 
     @Test
     void testSupportsReturnsTrue() {
-        var result = adapter.supports(mock(HttpServletRequest.class));
+        var result = this.adapter.supports(mock(HttpServletRequest.class));
 
         assertTrue(result);
     }
 
     @Test
     void testAdaptSuccess() throws JsonProcessingException {
-        var complexFilterJson = "{\"groupOperations\":[], \"nonPriorityGroupOperators\":[], \"rightSideOperands\":null}";
-        var filterGroupRequest = new FilterGroupRequest(null, null, null);
-        when(objectMapper.readValue(complexFilterJson, FilterGroupRequest.class)).thenReturn(filterGroupRequest);
+        var complexFilterJson = "{\"groupOperations\":[], "
+                + "\"nonPriorityGroupOperators\":[], "
+                + "\"rightSideOperands\":null}";
+        var filterGroupRequest = new FilterGroupRequest(
+                null,
+                null,
+                null
+        );
+        when(this.objectMapper.readValue(
+                complexFilterJson,
+                FilterGroupRequest.class
+        )).thenReturn(filterGroupRequest);
 
-        var result = adapter.adapt(complexFilterJson);
+        var result = this.adapter.adapt(complexFilterJson);
 
-        assertEquals(filterGroupRequest, result.filterGroupRequest().orElse(null));
+        assertEquals(
+                filterGroupRequest,
+                result.filterGroupRequest()
+                      .orElse(null)
+        );
     }
 
     @Test
-    void testAdaptInvalidJsonThrowsJsonProcessingException() throws JsonProcessingException {
-        // Arrange
+    void testAdaptInvalidJsonThrowsJsonProcessingException()
+            throws JsonProcessingException {
         var invalidJson = "invalid json";
-        when(objectMapper.readValue(invalidJson, FilterGroupRequest.class)).thenThrow(new JsonParseException("Invalid JSON"));
+        when(this.objectMapper.readValue(
+                invalidJson,
+                FilterGroupRequest.class
+        )).thenThrow(new JsonParseException("Invalid JSON"));
 
-        // Act & Assert
-        assertThrows(JsonProcessingException.class, () -> adapter.adapt(invalidJson));
+        assertThrows(
+                JsonProcessingException.class,
+                () -> this.adapter.adapt(invalidJson)
+        );
     }
 }

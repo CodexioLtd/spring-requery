@@ -116,13 +116,14 @@ class FilterJsonArgumentResolverTest {
         """;
     }
 
-    private static FilterRequestWrapper<Object> createMockSimpleFilterRequestWrapper(String filterJson) {
+    private FilterRequestWrapper<Object> createMockSimpleFilterRequestWrapper(String filterJson) {
         try {
-            if (filterJson == null || filterJson.isEmpty() || filterJson.isBlank()) {
+            if (filterJson == null || filterJson.isEmpty()
+                    || filterJson.isBlank()) {
                 return new FilterRequestWrapper<>();
             }
             if (!filterJson.startsWith("[")) {
-                var filterRequest = objectMapperMock.readValue(
+                var filterRequest = this.objectMapperMock.readValue(
                         filterJson,
                         FilterRequest.class
                 );
@@ -132,18 +133,25 @@ class FilterJsonArgumentResolverTest {
                 return new FilterRequestWrapper<>(List.of(filterRequest));
             }
 
-            return new FilterRequestWrapper<>(List.of(objectMapperMock.readValue(filterJson, FilterRequest[].class)));
+            return new FilterRequestWrapper<>(List.of(this.objectMapperMock.readValue(
+                    filterJson,
+                    FilterRequest[].class
+            )));
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private static FilterRequestWrapper<Object> createMockComplexFilterRequestWrapper(String filterJson) {
-        if (filterJson == null || filterJson.isEmpty() || filterJson.isBlank()) {
+    private FilterRequestWrapper<Object> createMockComplexFilterRequestWrapper(String filterJson) {
+        if (filterJson == null || filterJson.isEmpty()
+                || filterJson.isBlank()) {
             return new FilterRequestWrapper<>();
         }
         try {
-            return new FilterRequestWrapper<>(objectMapperMock.readValue(filterJson, FilterGroupRequest.class));
+            return new FilterRequestWrapper<>(this.objectMapperMock.readValue(
+                    filterJson,
+                    FilterGroupRequest.class
+            ));
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
@@ -165,7 +173,7 @@ class FilterJsonArgumentResolverTest {
         this.modelAndViewContainerMock = mock(ModelAndViewContainer.class);
         this.webDataBinderFactoryMock = mock(WebDataBinderFactory.class);
         this.filterJsonArgumentResolver = new FilterJsonArgumentResolver(
-                filterJsonTypeConverterMock,
+                this.filterJsonTypeConverterMock,
                 this.httpFilterAdapterMock
         );
 
@@ -186,7 +194,7 @@ class FilterJsonArgumentResolverTest {
                 any(),
                 any()
         )).thenReturn(mockExpression);
-        when(mockPath.in(any(Collection.class))).thenReturn(mockPredicate);
+        when(mockPath.in(any(Collection.class))).thenReturn(this.mockPredicate);
         when(this.nativeWebRequestMock.getNativeRequest(HttpServletRequest.class)).thenReturn(this.httpServletRequestMock);
     }
 
@@ -204,14 +212,19 @@ class FilterJsonArgumentResolverTest {
     @Test
     public void resolveArgument_ShouldReturnSpecification_WhenProcessingMultipleSimpleOperations()
             throws Exception {
-        var filterJson =
-                "[{\"operation\":\"CONTAINS\", \"field\":\"name\", \"value\":\"John\"}, "
-                        + "{\"operation\":\"EQ\", \"field\":\"age\", \"value\":21}, "
-                        + "{\"operation\":\"EMPTY\", \"field\":\"grades\", \"value\":[6]}, "
-                        + "{\"operation\":\"NOT_EMPTY\", \"field\":\"email\", \"value\":\"emailAddres@example.com\"}]";
-        var filterWrapperMock = createMockSimpleFilterRequestWrapper(filterJson);
+        var filterJson = "[{\"operation\":\"CONTAINS\", \"field\":\"name\", "
+                + "\"value\":\"John\"}, "
+                + "{\"operation\":\"EQ\", \"field\":\"age\", "
+                + "\"value\":21}, "
+                + "{\"operation\":\"EMPTY\", \"field\":\"grades\", "
+                + "\"value\":[6]}, "
+                + "{\"operation\":\"NOT_EMPTY\", \"field\":\"email\","
+                + " \"value\":\"emailAddres@example.com\"}]";
+        var filterWrapperMock =
+                createMockSimpleFilterRequestWrapper(filterJson);
         when(this.nativeWebRequestMock.getParameter("filter")).thenReturn(filterJson);
-        doReturn(filterWrapperMock).when(httpFilterAdapterMock).adapt(this.httpServletRequestMock);
+        doReturn(filterWrapperMock).when(this.httpFilterAdapterMock)
+                                   .adapt(this.httpServletRequestMock);
 
         var namePredicate = mock(Predicate.class);
         var agePredicate = mock(Predicate.class);
@@ -226,22 +239,45 @@ class FilterJsonArgumentResolverTest {
         var gradesPath = mock(Path.class);
         var emailPath = mock(Path.class);
 
-        when(mockRoot.get("name")).thenReturn(namePath);
-        when(mockRoot.get("age")).thenReturn(agePath);
-        when(mockRoot.get("grades")).thenReturn(gradesPath);
-        when(mockRoot.get("email")).thenReturn(emailPath);
+        when(this.mockRoot.get("name")).thenReturn(namePath);
+        when(this.mockRoot.get("age")).thenReturn(agePath);
+        when(this.mockRoot.get("grades")).thenReturn(gradesPath);
+        when(this.mockRoot.get("email")).thenReturn(emailPath);
         when(namePath.as(String.class)).thenReturn(namePath);
 
-        when(mockCriteriaBuilder.like(eq(namePath), eq("%John%"))).thenReturn(namePredicate);
-        when(mockCriteriaBuilder.equal(eq(agePath), eq(21))).thenReturn(agePredicate);
-        when(mockCriteriaBuilder.isNull(eq(gradesPath))).thenReturn(gradesPredicate);
-        when(mockCriteriaBuilder.isNotNull(eq(emailPath))).thenReturn(emailPredicate);
-        when(mockCriteriaBuilder.and(namePredicate, agePredicate)).thenReturn(nameANDAgePredicate);
-        when(mockCriteriaBuilder.and(nameANDAgePredicate, gradesPredicate)).thenReturn(nameANDAgeANDGradesPredicate);
-        when(mockCriteriaBuilder.and(nameANDAgeANDGradesPredicate, emailPredicate)).thenReturn(nameANDAgeANDGradesANDEmailPredicate);
+        when(this.mockCriteriaBuilder.like(
+                eq(namePath),
+                eq("%John%")
+        )).thenReturn(namePredicate);
+        when(this.mockCriteriaBuilder.equal(
+                eq(agePath),
+                eq(21)
+        )).thenReturn(agePredicate);
+        when(this.mockCriteriaBuilder.isNull(eq(gradesPath))).thenReturn(gradesPredicate);
+        when(this.mockCriteriaBuilder.isNotNull(eq(emailPath))).thenReturn(emailPredicate);
+        when(this.mockCriteriaBuilder.and(
+                namePredicate,
+                agePredicate
+        )).thenReturn(nameANDAgePredicate);
+        when(this.mockCriteriaBuilder.and(
+                nameANDAgePredicate,
+                gradesPredicate
+        )).thenReturn(nameANDAgeANDGradesPredicate);
+        when(this.mockCriteriaBuilder.and(
+                nameANDAgeANDGradesPredicate,
+                emailPredicate
+        )).thenReturn(nameANDAgeANDGradesANDEmailPredicate);
 
-        doReturn("John").when(filterJsonTypeConverterMock).convert(eq(String.class), eq("John"));
-        doReturn(21).when(filterJsonTypeConverterMock).convert(eq(Long.class), eq("21"));
+        doReturn("John").when(this.filterJsonTypeConverterMock)
+                        .convert(
+                                eq(String.class),
+                                eq("John")
+                        );
+        doReturn(21).when(this.filterJsonTypeConverterMock)
+                    .convert(
+                            eq(Long.class),
+                            eq("21")
+                    );
 
         var result =
                 (Specification<?>) this.filterJsonArgumentResolver.resolveArgument(
@@ -251,42 +287,67 @@ class FilterJsonArgumentResolverTest {
                         this.webDataBinderFactoryMock
                 );
 
-        var resultPredicate = result.toPredicate(mockRoot, criteriaQueryMock, mockCriteriaBuilder);
+        var resultPredicate = result.toPredicate(
+                this.mockRoot,
+                this.criteriaQueryMock,
+                this.mockCriteriaBuilder
+        );
 
         assertNotNull(resultPredicate);
-        assertEquals(nameANDAgeANDGradesANDEmailPredicate.getExpressions(), resultPredicate.getExpressions());
+        assertEquals(
+                nameANDAgeANDGradesANDEmailPredicate.getExpressions(),
+                resultPredicate.getExpressions()
+        );
 
-        verify(mockRoot).get("name");
-        verify(mockRoot).get("age");
-        verify(mockCriteriaBuilder).like(eq(namePath), eq("%John%"));
-        verify(mockCriteriaBuilder).equal(eq(agePath), eq(21));
-        verify(mockCriteriaBuilder).isNull(eq(gradesPath));
-        verify(mockCriteriaBuilder).isNotNull(eq(emailPath));
-        verify(mockCriteriaBuilder).and(namePredicate, agePredicate);
-        verify(mockCriteriaBuilder).and(nameANDAgePredicate, gradesPredicate);
-        verify(mockCriteriaBuilder).and(nameANDAgeANDGradesPredicate, emailPredicate);
+        verify(this.mockRoot).get("name");
+        verify(this.mockRoot).get("age");
+        verify(this.mockCriteriaBuilder).like(
+                eq(namePath),
+                eq("%John%")
+        );
+        verify(this.mockCriteriaBuilder).equal(
+                eq(agePath),
+                eq(21)
+        );
+        verify(this.mockCriteriaBuilder).isNull(eq(gradesPath));
+        verify(this.mockCriteriaBuilder).isNotNull(eq(emailPath));
+        verify(this.mockCriteriaBuilder).and(
+                namePredicate,
+                agePredicate
+        );
+        verify(this.mockCriteriaBuilder).and(
+                nameANDAgePredicate,
+                gradesPredicate
+        );
+        verify(this.mockCriteriaBuilder).and(
+                nameANDAgeANDGradesPredicate,
+                emailPredicate
+        );
     }
 
     @Test
     public void resolveArgument_ShouldReturnSpecification_WhenProcessingComplexGroupFilter()
             throws Exception {
         var filterJson = "{\"groupOperations\":["
-                + "{\"field\":\"role\",\"operation\":\"CONTAINS\",\"value\":\"operator\"}],"
+                + "{\"field\":\"role\",\"operation\":\"CONTAINS\","
+                + "\"value\":\"operator\"}],"
                 + "\"nonPriorityGroupOperators\":[\"AND\"],"
                 + "\"rightSideOperands\":{\"unaryGroupOperator\":\"OR\","
                 + "\"unaryGroup\":{\"groupOperations\":["
-                + "{\"field\":\"grades\",\"operation\":\"IN\",\"value\":[100,95]},"
-                + "{\"field\":\"name\",\"operation\":\"BEGINS_WITH\",\"value\":\"Doe\"}],"
+                + "{\"field\":\"grades\",\"operation\":\"IN\",\"value\":[100,"
+                + "95]}," + "{\"field\":\"name\",\"operation\":\"BEGINS_WITH\","
+                + "\"value\":\"Doe\"}],"
                 + "\"nonPriorityGroupOperators\":[\"OR\"],"
                 + "\"rightSideOperands\":{\"unaryGroupOperator\":\"AND\","
                 + "\"unaryGroup\":{\"groupOperations\":["
                 + "{\"field\":\"age\",\"operation\":\"GT\",\"value\":25}],"
                 + "\"nonPriorityGroupOperators\":[]}}}}}";
-        var filterWrapperMock = createMockComplexFilterRequestWrapper(filterJson);
+        var filterWrapperMock =
+                createMockComplexFilterRequestWrapper(filterJson);
         when(this.nativeWebRequestMock.getParameter("complexFilter")).thenReturn(filterJson);
-        doReturn(filterWrapperMock).when(httpFilterAdapterMock).adapt(this.httpServletRequestMock);
+        doReturn(filterWrapperMock).when(this.httpFilterAdapterMock)
+                                   .adapt(this.httpServletRequestMock);
 
-        // Mock predicates for each field
         var rolePredicate = mock(Predicate.class);
         var gradesPredicate = mock(Predicate.class);
         var namePredicate = mock(Predicate.class);
@@ -300,28 +361,73 @@ class FilterJsonArgumentResolverTest {
         var agePath = mock(Path.class);
         var rolePath = mock(Path.class);
 
-        when(mockRoot.get("name")).thenReturn(namePath);
-        when(mockRoot.get("grades")).thenReturn(gradesPath);
-        when(mockRoot.get("age")).thenReturn(agePath);
-        when(mockRoot.get("role")).thenReturn(rolePath);
+        when(this.mockRoot.get("name")).thenReturn(namePath);
+        when(this.mockRoot.get("grades")).thenReturn(gradesPath);
+        when(this.mockRoot.get("age")).thenReturn(agePath);
+        when(this.mockRoot.get("role")).thenReturn(rolePath);
         when(rolePath.as(String.class)).thenReturn(rolePath);
         when(namePath.as(String.class)).thenReturn(namePath);
 
-        when(mockCriteriaBuilder.like(eq(rolePath), eq("%operator%"))).thenReturn(rolePredicate);
-        when(gradesPath.in(Arrays.asList(100, 95))).thenReturn(gradesPredicate);
-        when(mockCriteriaBuilder.like(eq(namePath), eq("Doe%"))).thenReturn(namePredicate);
-        when(mockCriteriaBuilder.greaterThan(eq(agePath), eq(25))).thenReturn(agePredicate);
+        when(this.mockCriteriaBuilder.like(
+                eq(rolePath),
+                eq("%operator%")
+        )).thenReturn(rolePredicate);
+        when(gradesPath.in(Arrays.asList(
+                100,
+                95
+        ))).thenReturn(gradesPredicate);
+        when(this.mockCriteriaBuilder.like(
+                eq(namePath),
+                eq("Doe%")
+        )).thenReturn(namePredicate);
+        when(this.mockCriteriaBuilder.greaterThan(
+                eq(agePath),
+                eq(25)
+        )).thenReturn(agePredicate);
 
-        when(mockCriteriaBuilder.or(gradesPredicate, namePredicate)).thenReturn(secondLevel);
-        when(mockCriteriaBuilder.and(secondLevel, agePredicate)).thenReturn(secondANDThirdLevel);
-        when(mockCriteriaBuilder.or(rolePredicate, secondANDThirdLevel)).thenReturn(finalPredicate);
+        when(this.mockCriteriaBuilder.or(
+                gradesPredicate,
+                namePredicate
+        )).thenReturn(secondLevel);
+        when(this.mockCriteriaBuilder.and(
+                secondLevel,
+                agePredicate
+        )).thenReturn(secondANDThirdLevel);
+        when(this.mockCriteriaBuilder.or(
+                rolePredicate,
+                secondANDThirdLevel
+        )).thenReturn(finalPredicate);
 
-        doReturn("Doe").when(filterJsonTypeConverterMock).convert(eq(String.class), eq("Doe"));
-        doReturn("operator").when(filterJsonTypeConverterMock).convert(eq(String.class), eq("operator"));
-        doReturn(25).when(filterJsonTypeConverterMock).convert(eq(Long.class), eq("25"));
-        doReturn(100).when(filterJsonTypeConverterMock).convert(eq(Integer.class), eq("100"));
-        doReturn(95).when(filterJsonTypeConverterMock).convert(eq(Integer.class), eq("95"));
-        doReturn("[100, 95]").when(filterJsonTypeConverterMock).convert(eq(Integer.class), eq("[100, 95]"));
+        doReturn("Doe").when(this.filterJsonTypeConverterMock)
+                       .convert(
+                               eq(String.class),
+                               eq("Doe")
+                       );
+        doReturn("operator").when(this.filterJsonTypeConverterMock)
+                            .convert(
+                                    eq(String.class),
+                                    eq("operator")
+                            );
+        doReturn(25).when(this.filterJsonTypeConverterMock)
+                    .convert(
+                            eq(Long.class),
+                            eq("25")
+                    );
+        doReturn(100).when(this.filterJsonTypeConverterMock)
+                     .convert(
+                             eq(Integer.class),
+                             eq("100")
+                     );
+        doReturn(95).when(this.filterJsonTypeConverterMock)
+                    .convert(
+                            eq(Integer.class),
+                            eq("95")
+                    );
+        doReturn("[100, 95]").when(this.filterJsonTypeConverterMock)
+                             .convert(
+                                     eq(Integer.class),
+                                     eq("[100, 95]")
+                             );
 
         var result =
                 (Specification<?>) this.filterJsonArgumentResolver.resolveArgument(
@@ -337,35 +443,73 @@ class FilterJsonArgumentResolverTest {
                 result
         );
 
-
         var predicate = result.toPredicate(
                 this.mockRoot,
                 this.criteriaQueryMock,
                 this.mockCriteriaBuilder
         );
 
-        verify(mockRoot).get("role");
-        verify(mockRoot).get("grades");
-        verify(mockRoot).get("name");
-        verify(mockRoot).get("age");
+        verify(this.mockRoot).get("role");
+        verify(this.mockRoot).get("grades");
+        verify(this.mockRoot).get("name");
+        verify(this.mockRoot).get("age");
 
-        verify(mockCriteriaBuilder).like(eq(rolePath), eq("%operator%"));
-        verify(gradesPath).in(eq(Arrays.asList(100, 95)));
-        verify(mockCriteriaBuilder).like(eq(namePath), eq("Doe%"));
-        verify(mockCriteriaBuilder).greaterThan(eq(agePath), eq(25));
+        verify(this.mockCriteriaBuilder).like(
+                eq(rolePath),
+                eq("%operator%")
+        );
+        verify(gradesPath).in(eq(Arrays.asList(
+                100,
+                95
+        )));
+        verify(this.mockCriteriaBuilder).like(
+                eq(namePath),
+                eq("Doe%")
+        );
+        verify(this.mockCriteriaBuilder).greaterThan(
+                eq(agePath),
+                eq(25)
+        );
 
-        verify(mockCriteriaBuilder).or(gradesPredicate, namePredicate);
-        verify(mockCriteriaBuilder).and(secondLevel, agePredicate);
-        verify(mockCriteriaBuilder).or(rolePredicate, secondANDThirdLevel);
+        verify(this.mockCriteriaBuilder).or(
+                gradesPredicate,
+                namePredicate
+        );
+        verify(this.mockCriteriaBuilder).and(
+                secondLevel,
+                agePredicate
+        );
+        verify(this.mockCriteriaBuilder).or(
+                rolePredicate,
+                secondANDThirdLevel
+        );
 
-        verify(filterJsonTypeConverterMock).convert(eq(String.class), eq("operator"));
-        verify(filterJsonTypeConverterMock).convert(eq(Integer.class), eq("100"));
-        verify(filterJsonTypeConverterMock).convert(eq(Integer.class), eq("95"));
-        verify(filterJsonTypeConverterMock).convert(eq(String.class), eq("Doe"));
-        verify(filterJsonTypeConverterMock).convert(eq(Long.class), eq("25"));
+        verify(this.filterJsonTypeConverterMock).convert(
+                eq(String.class),
+                eq("operator")
+        );
+        verify(this.filterJsonTypeConverterMock).convert(
+                eq(Integer.class),
+                eq("100")
+        );
+        verify(this.filterJsonTypeConverterMock).convert(
+                eq(Integer.class),
+                eq("95")
+        );
+        verify(this.filterJsonTypeConverterMock).convert(
+                eq(String.class),
+                eq("Doe")
+        );
+        verify(this.filterJsonTypeConverterMock).convert(
+                eq(Long.class),
+                eq("25")
+        );
 
         assertNotNull(predicate);
-        assertEquals(finalPredicate.getExpressions(), predicate.getExpressions());
+        assertEquals(
+                finalPredicate.getExpressions(),
+                predicate.getExpressions()
+        );
     }
 
     @Test
@@ -373,15 +517,20 @@ class FilterJsonArgumentResolverTest {
         var filterRequestWrapperMock = new FilterRequestWrapper<>();
         when(this.httpServletRequestMock.getParameter("filter")).thenReturn(null);
         when(this.httpServletRequestMock.getParameter("complexFilter")).thenReturn(null);
-        doReturn(filterRequestWrapperMock).when(httpFilterAdapterMock).adapt(this.httpServletRequestMock);
+        doReturn(filterRequestWrapperMock).when(this.httpFilterAdapterMock)
+                                          .adapt(this.httpServletRequestMock);
 
-        // Act
-        var result = filterJsonArgumentResolver.resolveArgument(
-                methodParameterMock, null, nativeWebRequestMock, null
+        var result = this.filterJsonArgumentResolver.resolveArgument(
+                this.methodParameterMock,
+                null,
+                this.nativeWebRequestMock,
+                null
         );
 
-        // Assert
-        assertEquals(noFilterSpecification(), result);
+        assertEquals(
+                noFilterSpecification(),
+                result
+        );
     }
 
     private Specification<ChildMock> noFilterSpecification() {
@@ -392,9 +541,11 @@ class FilterJsonArgumentResolverTest {
     @MethodSource("simpleFilterDataProvider")
     void resolveArgument_ShouldReturnSpecification_ForVariousFilterTypes(String filterJson)
             throws Exception {
-        var filterRequestWrapperMock = createMockSimpleFilterRequestWrapper(filterJson);
+        var filterRequestWrapperMock =
+                createMockSimpleFilterRequestWrapper(filterJson);
         when(this.nativeWebRequestMock.getParameter("filter")).thenReturn(filterJson);
-        doReturn(filterRequestWrapperMock).when(httpFilterAdapterMock).adapt(this.httpServletRequestMock);
+        doReturn(filterRequestWrapperMock).when(this.httpFilterAdapterMock)
+                                          .adapt(this.httpServletRequestMock);
 
         var result =
                 (Specification<?>) this.filterJsonArgumentResolver.resolveArgument(
