@@ -39,26 +39,26 @@ public record FilterRequestWrapper<T>(
     }
 
     public FilterRequestWrapper<T> isSimple(Function<List<FilterRequest>, T> simpleSpecFunction) {
-        return filterRequests.map(simpleSpecFunction)
-                             .map(r -> new FilterRequestWrapper<>(
-                                     filterRequests,
-                                     filterGroupRequest,
-                                     Optional.of(r)
-                             ))
-                             .orElse(this);
+        return this.filterRequests.map(simpleSpecFunction)
+                                  .map(r -> new FilterRequestWrapper<>(
+                                          this.filterRequests,
+                                          this.filterGroupRequest,
+                                          Optional.of(r)
+                                  ))
+                                  .orElse(this);
     }
 
     public FilterRequestWrapper<T> orComplex(Function<FilterGroupRequest, T> complexSpecFunction) {
-        return filterGroupRequest.map(complexSpecFunction)
-                                 .map(r -> new FilterRequestWrapper<>(
-                                         filterRequests,
-                                         filterGroupRequest,
-                                         Optional.of(r)
-                                 ))
-                                 .orElse(this);
+        return this.filterGroupRequest.map(complexSpecFunction)
+                                      .map(r -> new FilterRequestWrapper<>(
+                                              this.filterRequests,
+                                              this.filterGroupRequest,
+                                              Optional.of(r)
+                                      ))
+                                      .orElse(this);
     }
 
     public T or(Supplier<T> defaultSupplier) {
-        return result.orElseGet(defaultSupplier);
+        return this.result.orElseGet(defaultSupplier);
     }
 }
