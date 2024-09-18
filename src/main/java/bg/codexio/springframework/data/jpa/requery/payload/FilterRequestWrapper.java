@@ -11,6 +11,7 @@ public record FilterRequestWrapper<T>(
         Optional<T> result
 ) {
     public FilterRequestWrapper {
+        filterRequests = filterRequests.filter(list -> !list.isEmpty());
     }
 
     public FilterRequestWrapper() {
@@ -38,26 +39,26 @@ public record FilterRequestWrapper<T>(
     }
 
     public FilterRequestWrapper<T> isSimple(Function<List<FilterRequest>, T> simpleSpecFunction) {
-        return this.filterRequests.filter(reqs -> !reqs.isEmpty())
-                                  .map(reqs -> new FilterRequestWrapper<T>(
-                                          this.filterRequests,
-                                          this.filterGroupRequest,
-                                          Optional.ofNullable(simpleSpecFunction.apply(reqs))
-                                  ))
-                                  .orElse(this);
+        return filterRequests.map(simpleSpecFunction)
+                             .map(r -> new FilterRequestWrapper<>(
+                                     filterRequests,
+                                     filterGroupRequest,
+                                     Optional.of(r)
+                             ))
+                             .orElse(this);
     }
 
     public FilterRequestWrapper<T> orComplex(Function<FilterGroupRequest, T> complexSpecFunction) {
-        return this.filterGroupRequest.map(groupReq -> new FilterRequestWrapper<T>(
-                           this.filterRequests,
-                           this.filterGroupRequest,
-                           Optional.ofNullable(complexSpecFunction.apply(groupReq))
-                   ))
-                                      .orElse(this);
+        return filterGroupRequest.map(complexSpecFunction)
+                                 .map(r -> new FilterRequestWrapper<>(
+                                         filterRequests,
+                                         filterGroupRequest,
+                                         Optional.of(r)
+                                 ))
+                                 .orElse(this);
     }
 
-
     public T or(Supplier<T> defaultSupplier) {
-        return this.result.orElseGet(defaultSupplier);
+        return result.orElseGet(defaultSupplier);
     }
 }
