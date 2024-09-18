@@ -13,72 +13,89 @@ import org.springframework.stereotype.Component;
 import java.util.*;
 import java.util.regex.Pattern;
 
+/**
+ * A filter adapter that handles GraphQL requests and translates filter
+ * arguments
+ * into a {@link FilterRequestWrapper}. This adapter supports both simple and
+ * complex filters,
+ * leveraging {@link GraphQLComplexFilterAdapter} for complex filter handling.
+ */
 @Component
 public class GraphQLHttpFilterAdapter
         implements HttpFilterAdapter {
     private final ObjectMapper objectMapper;
     private final GraphQLComplexFilterAdapter graphQLComplexFilterAdapter;
     private static final Map<String, FilterOperation> OPERATION_MAP =
+            // Mapping of GraphQL suffixes to corresponding filter operations
             Map.ofEntries(
-            Map.entry(
-                    "_gt",
-                    FilterOperation.GT
-            ),
-            Map.entry(
-                    "_gte",
-                    FilterOperation.GTE
-            ),
-            Map.entry(
-                    "_lt",
-                    FilterOperation.LT
-            ),
-            Map.entry(
-                    "_lte",
-                    FilterOperation.LTE
-            ),
-            Map.entry(
-                    "_in",
-                    FilterOperation.IN
-            ),
-            Map.entry(
-                    "_not_in",
-                    FilterOperation.NOT_IN
-            ),
-            Map.entry(
-                    "_contains",
-                    FilterOperation.CONTAINS
-            ),
-            Map.entry(
-                    "_starts_with",
-                    FilterOperation.BEGINS_WITH
-            ),
-            Map.entry(
-                    "_ends_with",
-                    FilterOperation.ENDS_WITH
-            ),
-            Map.entry(
-                    "_empty",
-                    FilterOperation.EMPTY
-            ),
-            Map.entry(
-                    "_not_empty",
-                    FilterOperation.NOT_EMPTY
-            ),
-            Map.entry(
-                    "_begins_with_caseins",
-                    FilterOperation.BEGINS_WITH_CASEINS
-            ),
-            Map.entry(
-                    "_ends_with_caseins",
-                    FilterOperation.ENDS_WITH_CASEINS
-            ),
-            Map.entry(
-                    "_contains_caseins",
-                    FilterOperation.CONTAINS_CASEINS
-            )
-    );
+                    Map.entry(
+                            "_gt",
+                            FilterOperation.GT
+                    ),
+                    Map.entry(
+                            "_gte",
+                            FilterOperation.GTE
+                    ),
+                    Map.entry(
+                            "_lt",
+                            FilterOperation.LT
+                    ),
+                    Map.entry(
+                            "_lte",
+                            FilterOperation.LTE
+                    ),
+                    Map.entry(
+                            "_in",
+                            FilterOperation.IN
+                    ),
+                    Map.entry(
+                            "_not_in",
+                            FilterOperation.NOT_IN
+                    ),
+                    Map.entry(
+                            "_contains",
+                            FilterOperation.CONTAINS
+                    ),
+                    Map.entry(
+                            "_starts_with",
+                            FilterOperation.BEGINS_WITH
+                    ),
+                    Map.entry(
+                            "_ends_with",
+                            FilterOperation.ENDS_WITH
+                    ),
+                    Map.entry(
+                            "_empty",
+                            FilterOperation.EMPTY
+                    ),
+                    Map.entry(
+                            "_not_empty",
+                            FilterOperation.NOT_EMPTY
+                    ),
+                    Map.entry(
+                            "_begins_with_caseins",
+                            FilterOperation.BEGINS_WITH_CASEINS
+                    ),
+                    Map.entry(
+                            "_ends_with_caseins",
+                            FilterOperation.ENDS_WITH_CASEINS
+                    ),
+                    Map.entry(
+                            "_contains_caseins",
+                            FilterOperation.CONTAINS_CASEINS
+                    )
+            );
 
 
+    /**
+     * Constructs a {@code GraphQLHttpFilterAdapter} with the specified
+     * dependencies.
+     *
+     * @param objectMapper                the {@link ObjectMapper} for JSON
+     *                                    processing
+     * @param graphQLComplexFilterAdapter the adapter for handling complex
+     *                                    GraphQL filters
+     */
     public GraphQLHttpFilterAdapter(
             ObjectMapper objectMapper,
             GraphQLComplexFilterAdapter graphQLComplexFilterAdapter
@@ -93,6 +110,17 @@ public class GraphQLHttpFilterAdapter
         return true;
     }
 
+    /**
+     * Adapts the filter parameters from the given {@link HttpServletRequest}
+     * into a {@link FilterRequestWrapper}.
+     * It checks what the HTTP method of the request is and calls the
+     * appropriate method based on it.
+     *
+     * @param request the HTTP servlet request containing filter parameters
+     * @param <T>     the type of the result in the {@link HttpServletRequest}
+     * @return a {@link FilterRequestWrapper} containing the adapted filter
+     * requests
+     */
     @Override
     public <T> FilterRequestWrapper<T> adapt(HttpServletRequest request) {
         if (request.getMethod()
@@ -106,6 +134,13 @@ public class GraphQLHttpFilterAdapter
         }
     }
 
+    /**
+     * Processes a GET request, extracting filter data from the query parameter.
+     *
+     * @param request the HTTP servlet request
+     * @param <T>     the type of the result in the {@link HttpServletRequest}
+     * @return a {@link FilterRequestWrapper} representing the filter
+     */
     private <T> FilterRequestWrapper<T> processGetRequest(HttpServletRequest request) {
         try {
             var query = request.getParameter("query");
@@ -123,6 +158,13 @@ public class GraphQLHttpFilterAdapter
         }
     }
 
+    /**
+     * Processes a POST request, extracting filter data from the request body.
+     *
+     * @param request the HTTP servlet request
+     * @param <T>     the type of the result in the {@link HttpServletRequest}
+     * @return a {@link FilterRequestWrapper} representing the filter
+     */
     private <T> FilterRequestWrapper<T> processPostRequest(HttpServletRequest request) {
         try {
             var requestBody = new StringBuilder();
@@ -151,6 +193,13 @@ public class GraphQLHttpFilterAdapter
         }
     }
 
+    /**
+     * Parses a GraphQL query and converts it into a list of
+     * {@link FilterRequest}.
+     *
+     * @param query the GraphQL query string
+     * @return a list of {@link FilterRequest} extracted from the query
+     */
     private List<FilterRequest> parseGraphQLQuery(String query) {
         var parser = new Parser();
         var document = parser.parseDocument(query);
@@ -158,6 +207,13 @@ public class GraphQLHttpFilterAdapter
         return processDocument(document);
     }
 
+    /**
+     * Processes the GraphQL document, extracting filter arguments into
+     * {@link FilterRequest}s.
+     *
+     * @param document the GraphQL document
+     * @return a list of {@link FilterRequest} extracted from the document
+     */
     private List<FilterRequest> processDocument(Document document) {
         var filterRequests = new ArrayList<FilterRequest>();
         var operationDefinitionList =
@@ -192,6 +248,15 @@ public class GraphQLHttpFilterAdapter
         return filterRequests;
     }
 
+    /**
+     * Recursively handles a map value, extracting nested values and creating
+     * {@link FilterRequest} objects for each key-value pair.
+     *
+     * @param containingObjectName the name of the object containing this map
+     * @param extractedValue       the value extracted from the map, expected
+     *                             to be another map
+     * @param filterRequests       the list of filter requests to be populated
+     */
     private void handleMapValue(
             String containingObjectName,
             Object extractedValue,
@@ -221,6 +286,13 @@ public class GraphQLHttpFilterAdapter
         }
     }
 
+    /**
+     * Extracts the base name of a field by removing the operation suffix
+     * (e.g., "_gt", "_lte") using the {@code OPERATION_MAP}.
+     *
+     * @param name the field name with the possible operation suffix
+     * @return the base field name without the operation suffix
+     */
     private String extractName(String name) {
         return OPERATION_MAP.keySet()
                             .stream()
@@ -233,7 +305,15 @@ public class GraphQLHttpFilterAdapter
                             .orElse(name);
     }
 
-
+    /**
+     * Extracts the value from a GraphQL {@link Value} object depending on
+     * its type.
+     * Supported types include String, Integer, Boolean, Float, Enum, Object,
+     * and Array.
+     *
+     * @param value the {@link Value} object to extract from
+     * @return the corresponding Java object representation of the value
+     */
     private Object extractValue(Value<?> value) {
         return switch (value) {
             case StringValue sv -> sv.getValue();
@@ -250,6 +330,15 @@ public class GraphQLHttpFilterAdapter
         };
     }
 
+    /**
+     * Processes a complex {@link ObjectValue}, extracting each field's name
+     * and value
+     * into a {@link Map}. This method is used to handle object-structured
+     * values.
+     *
+     * @param value the {@link ObjectValue} to extract fields from
+     * @return a map of field names to their corresponding values
+     */
     private Map<String, Object> handleComplexObject(ObjectValue value) {
         var result = new HashMap<String, Object>();
         for (var field : value.getObjectFields()) {
@@ -261,6 +350,16 @@ public class GraphQLHttpFilterAdapter
         return result;
     }
 
+    /**
+     * Determines the filter operation (e.g., EQ, GT, LTE) based on the
+     * argument's suffix.
+     * If no matching suffix is found in the {@code OPERATION_MAP}, it
+     * defaults to {@link FilterOperation#EQ}.
+     *
+     * @param argumentName the argument name to analyze for an operation suffix
+     * @return the corresponding {@link FilterOperation} or
+     * {@link FilterOperation#EQ} if not found
+     */
     private FilterOperation getOperationFromArgument(String argumentName) {
         return OPERATION_MAP.entrySet()
                             .stream()
@@ -270,7 +369,16 @@ public class GraphQLHttpFilterAdapter
                             .orElse(FilterOperation.EQ);
     }
 
-
+    /**
+     * Extracts the body of a filter from a GraphQL query string using
+     * regular expressions.
+     * The method finds the part of the query that represents the filter and
+     * returns it.
+     *
+     * @param query the full GraphQL query string
+     * @return an {@link Optional} containing the extracted filter body, or
+     * empty if not found
+     */
     private Optional<String> extractFilterBody(String query) {
         // Use regex to extract the contents of the filter argument
         var pattern = Pattern.compile(
