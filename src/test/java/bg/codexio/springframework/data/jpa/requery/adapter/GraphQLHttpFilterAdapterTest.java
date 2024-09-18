@@ -116,7 +116,10 @@ class GraphQLHttpFilterAdapterTest {
 
     @Test
     void testSupportsReturnsTrue() {
-        var result = this.adapter.supports(mock(HttpServletRequest.class));
+        var mockRequest = mock(HttpServletRequest.class);
+        when(mockRequest.getRequestURL()).thenReturn(new StringBuffer("http://localhost/graphql"));
+
+        var result = this.adapter.supports(mockRequest);
 
         assertTrue(result);
     }

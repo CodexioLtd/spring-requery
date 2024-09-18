@@ -1,7 +1,10 @@
 package bg.codexio.springframework.data.jpa.requery.resolver;
 
+import bg.codexio.springframework.data.jpa.requery.adapter.HttpFilterAdapter;
 import bg.codexio.springframework.data.jpa.requery.adapter.JsonHttpFilterAdapter;
+import bg.codexio.springframework.data.jpa.requery.config.AdapterProperties;
 import bg.codexio.springframework.data.jpa.requery.config.FilterJsonTypeConverter;
+import bg.codexio.springframework.data.jpa.requery.config.RequeryProperties;
 import bg.codexio.springframework.data.jpa.requery.payload.FilterGroupRequest;
 import bg.codexio.springframework.data.jpa.requery.payload.FilterRequest;
 import bg.codexio.springframework.data.jpa.requery.payload.FilterRequestWrapper;
@@ -25,10 +28,7 @@ import org.springframework.web.method.support.ModelAndViewContainer;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -50,6 +50,9 @@ class FilterJsonArgumentResolverTest {
     private JsonHttpFilterAdapter httpFilterAdapterMock;
     private Predicate mockPredicate;
     private FilterJsonTypeConverter filterJsonTypeConverterMock;
+    private Map<String, HttpFilterAdapter> adaptersByName;
+    private RequeryProperties properties;
+    private AdapterProperties adapterProperties;
 
     private static Stream<Arguments> simpleFilterDataProvider() {
         return Stream.of(
@@ -162,7 +165,11 @@ class FilterJsonArgumentResolverTest {
         var mockPath = mock(Path.class);
         var mockExpression = mock(Expression.class);
         var mockParameterizedType = mock(ParameterizedType.class);
+        var activeAdapters = List.of("JsonHttpFilterAdapter");
 
+        this.adaptersByName = mock(Map.class);
+        this.properties = mock(RequeryProperties.class);
+        this.adapterProperties = mock(AdapterProperties.class);
         this.filterJsonTypeConverterMock = mock(FilterJsonTypeConverter.class);
         this.objectMapperMock = new ObjectMapper();
         this.httpFilterAdapterMock = mock(JsonHttpFilterAdapter.class);
@@ -174,7 +181,9 @@ class FilterJsonArgumentResolverTest {
         this.webDataBinderFactoryMock = mock(WebDataBinderFactory.class);
         this.filterJsonArgumentResolver = new FilterJsonArgumentResolver(
                 this.filterJsonTypeConverterMock,
-                this.httpFilterAdapterMock
+                this.adaptersByName,
+                this.properties
+
         );
 
         this.mockCriteriaBuilder = mock(CriteriaBuilder.class);
@@ -196,6 +205,12 @@ class FilterJsonArgumentResolverTest {
         )).thenReturn(mockExpression);
         when(mockPath.in(any(Collection.class))).thenReturn(this.mockPredicate);
         when(this.nativeWebRequestMock.getNativeRequest(HttpServletRequest.class)).thenReturn(this.httpServletRequestMock);
+        when(this.properties.getAdapters()).thenReturn(this.adapterProperties);
+        when(this.adapterProperties.getActive()).thenReturn(activeAdapters);
+        when(this.adaptersByName.containsKey("GraphQLHttpFilterAdapter")).thenReturn(false);
+        when(this.adaptersByName.containsKey("JsonHttpFilterAdapter")).thenReturn(true);
+        when(this.adaptersByName.get("JsonHttpFilterAdapter")).thenReturn(this.httpFilterAdapterMock);
+        when(this.httpFilterAdapterMock.supports(this.httpServletRequestMock)).thenReturn(true);
     }
 
     @Test

@@ -8,23 +8,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.stereotype.Component;
 
 import java.util.List;
 
 /**
- * Default implementation of {@link HttpFilterAdapter}. This implementation
- * is used when no other implementation of {@link HttpFilterAdapter} is
- * provided.
- * <p>A filter adapter that processes JSON filters from
+ A filter adapter that processes JSON filters from
  * {@link HttpServletRequest}.
  * It adapts JSON-based filter requests or complex filter requests into
  * {@link FilterRequestWrapper}.
  * This implementation uses {@link ObjectMapper} for JSON deserialization.
  */
-@Component
-@ConditionalOnMissingBean(HttpFilterAdapter.class)
 public class JsonHttpFilterAdapter
         implements HttpFilterAdapter {
     private static final Logger logger =
@@ -44,8 +37,8 @@ public class JsonHttpFilterAdapter
 
     @Override
     public boolean supports(HttpServletRequest req) {
-        //fix later
-        return true;
+        return req.getParameter("filter") != null
+                || req.getParameter("complexFilter") != null;
     }
 
     /**

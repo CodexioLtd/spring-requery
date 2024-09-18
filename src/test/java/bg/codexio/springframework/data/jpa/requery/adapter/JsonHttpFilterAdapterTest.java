@@ -21,7 +21,10 @@ class JsonHttpFilterAdapterTest {
 
     @Test
     void testSupportsReturnsTrue() {
-        var result = this.adapter.supports(mock(HttpServletRequest.class));
+        var request = mock(HttpServletRequest.class);
+        when(request.getParameter("filter")).thenReturn("filterString");
+
+        var result = this.adapter.supports(request);
 
         assertTrue(result);
     }

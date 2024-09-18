@@ -2,9 +2,11 @@ package bg.codexio.springframework.data.jpa.requery.resolver;
 
 import bg.codexio.springframework.data.jpa.requery.adapter.HttpFilterAdapter;
 import bg.codexio.springframework.data.jpa.requery.config.FilterJsonTypeConverter;
+import bg.codexio.springframework.data.jpa.requery.config.RequeryProperties;
 import bg.codexio.springframework.data.jpa.requery.payload.FilterGroupRequest;
 import bg.codexio.springframework.data.jpa.requery.payload.FilterLogicalOperator;
 import bg.codexio.springframework.data.jpa.requery.payload.FilterRequest;
+import bg.codexio.springframework.data.jpa.requery.payload.FilterRequestWrapper;
 import bg.codexio.springframework.data.jpa.requery.resolver.function.CaseInsensitiveLikeSQLFunction;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import jakarta.persistence.criteria.CriteriaBuilder;
@@ -27,6 +29,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 /**
  * A Spring MVC argument resolver for converting JSON-encoded filter criteria
@@ -42,14 +45,18 @@ public class FilterJsonArgumentResolver
 
     private final FilterJsonTypeConverter converter;
 
-    private final HttpFilterAdapter httpFilterAdapter;
+    private final Map<String, HttpFilterAdapter> adaptersByBeanName;
+
+    private final RequeryProperties properties;
 
     public FilterJsonArgumentResolver(
             FilterJsonTypeConverter converter,
-            HttpFilterAdapter httpFilterAdapter
+            Map<String, HttpFilterAdapter> adaptersByBeanName,
+            RequeryProperties properties
     ) {
         this.converter = converter;
-        this.httpFilterAdapter = httpFilterAdapter;
+        this.adaptersByBeanName = adaptersByBeanName;
+        this.properties = properties;
     }
 
     /**
@@ -84,20 +91,27 @@ public class FilterJsonArgumentResolver
             WebDataBinderFactory binderFactory
     ) throws Exception {
         var request = webRequest.getNativeRequest(HttpServletRequest.class);
-        var filterWrapper = this.httpFilterAdapter.adapt(request);
-
         var genericType =
                 (Class<?>) ((ParameterizedType) parameter.getGenericParameterType()).getActualTypeArguments()[0];
 
-        return filterWrapper.isSimple(simpleFilter -> getSimpleFilterSpecification(
-                                    simpleFilter,
-                                    genericType
-                            ))
-                            .orComplex(complexFilter -> getComplexFilterSpecification(
-                                    complexFilter,
-                                    genericType
-                            ))
-                            .or(this::noFilterSpecification);
+        return this.properties.getAdapters()
+                              .getActive()
+                              .stream()
+                              .filter(this.adaptersByBeanName::containsKey)
+                              .map(this.adaptersByBeanName::get)
+                              .filter(adapter -> adapter.supports(request))
+                              .findFirst()
+                              .map(httpFilterAdapter -> httpFilterAdapter.adapt(request))
+                              .orElse(new FilterRequestWrapper<>())
+                              .isSimple(simpleFilter -> getSimpleFilterSpecification(
+                                      simpleFilter,
+                                      genericType
+                              ))
+                              .orComplex(complexFilter -> getComplexFilterSpecification(
+                                      complexFilter,
+                                      genericType
+                              ))
+                              .or(this::noFilterSpecification);
     }
 
     /**
@@ -216,7 +230,7 @@ public class FilterJsonArgumentResolver
      * entity being filtered.
      *
      * @param simpleRequest The adapted simple {@link FilterRequest} from the
-     *                     request
+     *                      request
      * @param genericType   The class type of the entities being filtered.
      * @return A {@link Specification} that represents the filter criteria
      * provided.

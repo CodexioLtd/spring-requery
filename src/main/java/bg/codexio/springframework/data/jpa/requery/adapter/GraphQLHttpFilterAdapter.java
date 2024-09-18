@@ -8,7 +8,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import graphql.language.*;
 import graphql.parser.Parser;
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.stereotype.Component;
 
 import java.util.*;
 import java.util.regex.Pattern;
@@ -20,7 +19,6 @@ import java.util.regex.Pattern;
  * complex filters,
  * leveraging {@link GraphQLComplexFilterAdapter} for complex filter handling.
  */
-@Component
 public class GraphQLHttpFilterAdapter
         implements HttpFilterAdapter {
     private final ObjectMapper objectMapper;
@@ -106,8 +104,9 @@ public class GraphQLHttpFilterAdapter
 
     @Override
     public boolean supports(HttpServletRequest req) {
-        //fix later
-        return true;
+        return req.getRequestURL()
+                  .toString()
+                  .contains("/graphql");
     }
 
     /**
