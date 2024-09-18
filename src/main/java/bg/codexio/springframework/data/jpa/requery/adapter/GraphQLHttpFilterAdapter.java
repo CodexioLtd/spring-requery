@@ -102,6 +102,19 @@ public class GraphQLHttpFilterAdapter
         this.graphQLComplexFilterAdapter = graphQLComplexFilterAdapter;
     }
 
+    /**
+     * Determines whether the given {@link HttpServletRequest} supports
+     * GraphQL requests.
+     * <p>
+     * This method checks if the request URL contains the "/graphql" path,
+     * which indicates
+     * that the request is related to GraphQL operations.
+     * </p>
+     *
+     * @param req the {@link HttpServletRequest} to evaluate
+     * @return {@code true} if the request URL contains "/graphql", {@code
+     * false} otherwise
+     */
     @Override
     public boolean supports(HttpServletRequest req) {
         return req.getRequestURL()

@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 
 /**
- A filter adapter that processes JSON filters from
+ * A filter adapter that processes JSON filters from
  * {@link HttpServletRequest}.
  * It adapts JSON-based filter requests or complex filter requests into
  * {@link FilterRequestWrapper}.
@@ -35,6 +35,22 @@ public class JsonHttpFilterAdapter
         this.objectMapper = objectMapper;
     }
 
+    /**
+     * Determines whether the given {@link HttpServletRequest} supports
+     * filtering operations.
+     * <p>
+     * This method checks if the request contains any filter parameters,
+     * specifically
+     * the "filter" or "complexFilter" parameters, which indicates that the
+     * request
+     * is related to filtering operations.
+     * </p>
+     *
+     * @param req the {@link HttpServletRequest} to evaluate
+     * @return {@code true} if the request contains either "filter" or
+     * "complexFilter" parameters,
+     * {@code false} otherwise
+     */
     @Override
     public boolean supports(HttpServletRequest req) {
         return req.getParameter("filter") != null

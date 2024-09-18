@@ -14,8 +14,6 @@ public interface HttpFilterAdapter {
     /**
      * Determines whether this adapter supports the given
      * {@link HttpServletRequest}.
-     * Currently, this method always returns {@code true}, but this behavior
-     * can be modified.
      *
      * @param req the HTTP servlet request to check
      * @return {@code true} if the adapter supports the request, {@code false
