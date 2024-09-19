@@ -8,6 +8,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import graphql.language.*;
 import graphql.parser.Parser;
 import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 import java.util.*;
 import java.util.regex.Pattern;
@@ -19,8 +22,11 @@ import java.util.regex.Pattern;
  * complex filters,
  * leveraging {@link GraphQLComplexFilterAdapter} for complex filter handling.
  */
+@Component
 public class GraphQLHttpFilterAdapter
         implements HttpFilterAdapter {
+    private static final Logger logger =
+            LoggerFactory.getLogger(GraphQLHttpFilterAdapter.class);
     private final ObjectMapper objectMapper;
     private final GraphQLComplexFilterAdapter graphQLComplexFilterAdapter;
     private static final Map<String, FilterOperation> OPERATION_MAP =
@@ -164,7 +170,10 @@ public class GraphQLHttpFilterAdapter
 
             return new FilterRequestWrapper<>(parseGraphQLQuery(query));
         } catch (Exception e) {
-            System.out.println(e.getMessage());
+            this.logger.error(
+                    e.getMessage(),
+                    e
+            );
 
             return new FilterRequestWrapper<>();
         }
@@ -199,7 +208,10 @@ public class GraphQLHttpFilterAdapter
 
             return new FilterRequestWrapper<>(parseGraphQLQuery(query));
         } catch (Exception e) {
-            System.out.println(e.getMessage());
+            this.logger.error(
+                    e.getMessage(),
+                    e
+            );
 
             return new FilterRequestWrapper<>();
         }
@@ -274,27 +286,27 @@ public class GraphQLHttpFilterAdapter
             Object extractedValue,
             List<FilterRequest> filterRequests
     ) {
-        if (extractedValue instanceof Map) {
-            for (var entry :
-                    ((Map<String, Object>) extractedValue).entrySet()) {
-                var nestedValue = (Value<?>) entry.getValue();
-                var nestedExtractedValue = extractValue(nestedValue);
-                if (nestedExtractedValue instanceof Map) {
-                    handleMapValue(
-                            entry.getKey(),
-                            nestedExtractedValue,
-                            filterRequests
-                    );
-                }
+        if (!(extractedValue instanceof Map)) {
+            return;
+        }
 
-                var filterRequest = new FilterRequest(
-                        containingObjectName.concat(".")
-                                            .concat(extractName(entry.getKey())),
+        for (var entry : ((Map<String, Object>) extractedValue).entrySet()) {
+            var nestedValue = (Value<?>) entry.getValue();
+            var nestedExtractedValue = extractValue(nestedValue);
+            if (nestedExtractedValue instanceof Map) {
+                handleMapValue(
+                        entry.getKey(),
                         nestedExtractedValue,
-                        getOperationFromArgument(entry.getKey())
+                        filterRequests
                 );
-                filterRequests.add(filterRequest);
             }
+            var filterRequest = new FilterRequest(
+                    containingObjectName.concat(".")
+                                        .concat(extractName(entry.getKey())),
+                    nestedExtractedValue,
+                    getOperationFromArgument(entry.getKey())
+            );
+            filterRequests.add(filterRequest);
         }
     }
 

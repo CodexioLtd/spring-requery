@@ -5,11 +5,15 @@ import bg.codexio.springframework.data.jpa.requery.payload.FilterRequestWrapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.stereotype.Component;
 
 /**
- * Implementation of {@link GraphQLComplexFilterAdapter} for adapting
+ * Default implementation of {@link GraphQLComplexFilterAdapter} for adapting
  * complex filters from a JSON string to a {@link FilterRequestWrapper}.
  */
+@Component
+@ConditionalOnMissingBean(GraphQLComplexFilterAdapter.class)
 public class GraphQLDefaultComplexFilterAdapter
         implements GraphQLComplexFilterAdapter {
     private final ObjectMapper objectMapper;
