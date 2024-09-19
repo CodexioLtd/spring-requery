@@ -8,7 +8,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -21,10 +20,9 @@ import java.util.List;
  * This implementation uses {@link ObjectMapper} for JSON deserialization.
  */
 @Component
-@ConditionalOnMissingBean(HttpFilterAdapter.class)
 public class JsonHttpFilterAdapter
         implements HttpFilterAdapter {
-    private static final Logger logger =
+    private final Logger logger =
             LoggerFactory.getLogger(JsonHttpFilterAdapter.class);
     private final ObjectMapper objectMapper;
 

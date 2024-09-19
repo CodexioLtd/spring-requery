@@ -2,7 +2,6 @@ package bg.codexio.springframework.data.jpa.requery.resolver;
 
 import bg.codexio.springframework.data.jpa.requery.adapter.HttpFilterAdapter;
 import bg.codexio.springframework.data.jpa.requery.config.FilterJsonTypeConverter;
-import bg.codexio.springframework.data.jpa.requery.config.RequeryProperties;
 import bg.codexio.springframework.data.jpa.requery.payload.FilterGroupRequest;
 import bg.codexio.springframework.data.jpa.requery.payload.FilterLogicalOperator;
 import bg.codexio.springframework.data.jpa.requery.payload.FilterRequest;
@@ -29,7 +28,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 
 /**
  * A Spring MVC argument resolver for converting JSON-encoded filter criteria
@@ -45,18 +43,14 @@ public class FilterJsonArgumentResolver
 
     private final FilterJsonTypeConverter converter;
 
-    private final Map<String, HttpFilterAdapter> adaptersByBeanName;
-
-    private final RequeryProperties properties;
+    private final List<HttpFilterAdapter> activeAdapters;
 
     public FilterJsonArgumentResolver(
             FilterJsonTypeConverter converter,
-            Map<String, HttpFilterAdapter> adaptersByBeanName,
-            RequeryProperties properties
+            List<HttpFilterAdapter> activeAdapters
     ) {
         this.converter = converter;
-        this.adaptersByBeanName = adaptersByBeanName;
-        this.properties = properties;
+        this.activeAdapters = activeAdapters;
     }
 
     /**
@@ -89,29 +83,25 @@ public class FilterJsonArgumentResolver
             ModelAndViewContainer mavContainer,
             @NotNull NativeWebRequest webRequest,
             WebDataBinderFactory binderFactory
-    ) throws Exception {
+    ) {
         var request = webRequest.getNativeRequest(HttpServletRequest.class);
         var genericType =
                 (Class<?>) ((ParameterizedType) parameter.getGenericParameterType()).getActualTypeArguments()[0];
 
-        return this.properties.getAdapters()
-                              .getActive()
-                              .stream()
-                              .filter(this.adaptersByBeanName::containsKey)
-                              .map(this.adaptersByBeanName::get)
-                              .filter(adapter -> adapter.supports(request))
-                              .findFirst()
-                              .map(httpFilterAdapter -> httpFilterAdapter.adapt(request))
-                              .orElse(new FilterRequestWrapper<>())
-                              .isSimple(simpleFilter -> getSimpleFilterSpecification(
-                                      simpleFilter,
-                                      genericType
-                              ))
-                              .orComplex(complexFilter -> getComplexFilterSpecification(
-                                      complexFilter,
-                                      genericType
-                              ))
-                              .or(this::noFilterSpecification);
+        return this.activeAdapters.stream()
+                                  .filter(adapter -> adapter.supports(request))
+                                  .findFirst()
+                                  .map(httpFilterAdapter -> httpFilterAdapter.adapt(request))
+                                  .orElse(new FilterRequestWrapper<>())
+                                  .isSimple(simpleFilter -> getSimpleFilterSpecification(
+                                          simpleFilter,
+                                          genericType
+                                  ))
+                                  .orComplex(complexFilter -> getComplexFilterSpecification(
+                                          complexFilter,
+                                          genericType
+                                  ))
+                                  .or(this::noFilterSpecification);
     }
 
     /**
