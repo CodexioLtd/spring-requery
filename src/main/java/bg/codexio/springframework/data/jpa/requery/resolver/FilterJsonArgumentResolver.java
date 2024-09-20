@@ -87,9 +87,25 @@ public class FilterJsonArgumentResolver
         var request = webRequest.getNativeRequest(HttpServletRequest.class);
         var genericType =
                 (Class<?>) ((ParameterizedType) parameter.getGenericParameterType()).getActualTypeArguments()[0];
-
+        this.logger.debug(
+                "start traversing active adapters lost with size {}. If no "
+                        + "logs appear it means either that no adapter is "
+                        + "active or no active adapter supports the request.",
+                this.activeAdapters.size()
+        );
         return this.activeAdapters.stream()
+                                  .peek(adapter -> this.logger.debug(
+                                          "Invoking {}'s supports method",
+                                          adapter.getClass()
+                                                 .getSimpleName()
+                                  ))
                                   .filter(adapter -> adapter.supports(request))
+                                  .peek(adapter -> this.logger.debug(
+                                          "{} supports this request and will "
+                                                  + "attempt to adapt it.",
+                                          adapter.getClass()
+                                                 .getSimpleName()
+                                  ))
                                   .findFirst()
                                   .map(httpFilterAdapter -> httpFilterAdapter.adapt(request))
                                   .orElse(new FilterRequestWrapper<>())
