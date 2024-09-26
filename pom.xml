@@ -5,7 +5,7 @@
 
     <groupId>bg.codexio.springframework.data.jpa.requery</groupId>
     <artifactId>requery-core</artifactId>
-    <version>1.0.4-SNAPSHOT</version>
+    <version>1.0.5</version>
     <packaging>jar</packaging>
 
     <name>Codexio Ltd. Unified Request to Query resolver</name>
@@ -122,12 +122,6 @@
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
             <version>${mockito.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.graphql-java</groupId>
-            <artifactId>graphql-java</artifactId>
-            <version>${graphql.version}</version>
         </dependency>
 
     </dependencies>

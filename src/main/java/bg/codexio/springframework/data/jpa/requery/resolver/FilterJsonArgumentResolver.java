@@ -88,9 +88,7 @@ public class FilterJsonArgumentResolver
         var genericType =
                 (Class<?>) ((ParameterizedType) parameter.getGenericParameterType()).getActualTypeArguments()[0];
         this.logger.debug(
-                "start traversing active adapters lost with size {}. If no "
-                        + "logs appear it means either that no adapter is "
-                        + "active or no active adapter supports the request.",
+                "{} active adapters will be tested against the request",
                 this.activeAdapters.size()
         );
         return this.activeAdapters.stream()
