@@ -59,7 +59,7 @@ a generic HTTP Request and a desired query while maintaining the security undern
 ## Quick Start
 
 1. Begin by setting up a Spring MVC project with Maven
-2. Add the **Requery** library as dependency in your project
+2. Add the **Requery** library as dependency in your project and follow the [Usage section](#usage)'s instructions.
 
 ```xml
 
@@ -120,7 +120,29 @@ Here’s how you can integrate and utilize the key components of the library:
 To leverage the `FilterJsonArgumentResolver` and other components, you need to set up several beans in your Spring
 configuration:
 
+#### Create the argument resolver:
+
+To configure the instantiation of the `FilterJsonArgumentResolver` create a bean in your configuration class like this:
+
+```java
+
+@Bean
+public FilterJsonTypeConverter filterJsonTypeConverter() {
+    return new FilterJsonTypeConverterImpl();
+}
+
+@Bean
+public FilterJsonArgumentResolver filterJsonArgumentResolver(List<HttpFilterAdapter> activeAdapters) {
+    return new FilterJsonArgumentResolver(
+            filterJsonTypeConverter(),
+            activeAdapters
+    );
+}
+```
+
 #### Register the argument resolver:
+
+In order to register the newly created `FilterJsonArgumentResolver` create the following class:
 
 ```java
 
@@ -136,6 +158,50 @@ public class FilterJsonArgumentResolverConfiguration
     @Override
     public void addArgumentResolvers(List<HandlerMethodArgumentResolver> resolvers) {
         resolvers.add(this.filterJsonArgumentResolver);
+    }
+}
+```
+
+### Default Adapter Bean creation
+
+Then in order to register the default `HttpFilterAdapter` implementation - the `JsonHttpFilterAdapter` - you will have
+to add a Bean in your configuration class and add another bean as constructor parameter of type `ObjectMapper`
+
+```java
+
+@Bean
+@ConditionalOnMissingBean
+public ObjectMapper objectMapper() {
+    return new ObjectMapper();
+}
+
+@Bean
+public HttpFilterAdapter httpFilterAdapter() {
+    return new JsonHttpFilterAdapter(objectMapper());
+}
+```
+
+#### There is a possibility to create and instantiate a custom FilterAdapter
+
+All you would have to do is to create your class implementing the `HttpFilterAdapter` and annotate it as a `@Component`.
+Spring will automatically include it in the list passed in the constructor of the `FilterJsonArgumentResolver` and based
+on the request and the supports method you will have a second working adapter.
+
+```java
+
+@Component
+public class CustomHttpFilterImpl
+        implements HttpFilterAdapter {
+    @Override
+    public boolean supports(HttpServletRequest request) {
+        //your implementation
+        return true;
+    }
+
+    @Override
+    public <T> FilterRequestWrapper<T> adapt(HttpServletRequest webRequest) {
+        //your implementation
+        return new FilterRequestWrapper<>();
     }
 }
 ```

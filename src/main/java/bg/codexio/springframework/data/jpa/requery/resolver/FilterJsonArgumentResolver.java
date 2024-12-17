@@ -1,16 +1,18 @@
 package bg.codexio.springframework.data.jpa.requery.resolver;
 
+import bg.codexio.springframework.data.jpa.requery.adapter.HttpFilterAdapter;
 import bg.codexio.springframework.data.jpa.requery.config.FilterJsonTypeConverter;
 import bg.codexio.springframework.data.jpa.requery.payload.FilterGroupRequest;
 import bg.codexio.springframework.data.jpa.requery.payload.FilterLogicalOperator;
 import bg.codexio.springframework.data.jpa.requery.payload.FilterRequest;
+import bg.codexio.springframework.data.jpa.requery.payload.FilterRequestWrapper;
 import bg.codexio.springframework.data.jpa.requery.resolver.function.CaseInsensitiveLikeSQLFunction;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.constraints.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,16 +41,16 @@ public class FilterJsonArgumentResolver
         implements HandlerMethodArgumentResolver {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-    private final ObjectMapper objectMapper;
-
     private final FilterJsonTypeConverter converter;
 
+    private final List<HttpFilterAdapter> activeAdapters;
+
     public FilterJsonArgumentResolver(
-            ObjectMapper objectMapper,
-            FilterJsonTypeConverter converter
+            FilterJsonTypeConverter converter,
+            List<HttpFilterAdapter> activeAdapters
     ) {
-        this.objectMapper = objectMapper;
         this.converter = converter;
+        this.activeAdapters = activeAdapters;
     }
 
     /**
@@ -81,28 +83,39 @@ public class FilterJsonArgumentResolver
             ModelAndViewContainer mavContainer,
             @NotNull NativeWebRequest webRequest,
             WebDataBinderFactory binderFactory
-    ) throws Exception {
-        var filterJson = webRequest.getParameter("filter");
-        var complexFilterJson = webRequest.getParameter("complexFilter");
-
+    ) {
+        var request = webRequest.getNativeRequest(HttpServletRequest.class);
         var genericType =
                 (Class<?>) ((ParameterizedType) parameter.getGenericParameterType()).getActualTypeArguments()[0];
-
-        if (filterJson != null) {
-            return this.getSimpleFilterSpecification(
-                    filterJson,
-                    genericType
-            );
-        }
-
-        if (complexFilterJson != null) {
-            return this.getComplexFilterSpecification(
-                    complexFilterJson,
-                    genericType
-            );
-        }
-
-        return this.noFilterSpecification();
+        this.logger.debug(
+                "{} active adapters will be tested against the request",
+                this.activeAdapters.size()
+        );
+        return this.activeAdapters.stream()
+                                  .peek(adapter -> this.logger.debug(
+                                          "Invoking {}'s supports method",
+                                          adapter.getClass()
+                                                 .getSimpleName()
+                                  ))
+                                  .filter(adapter -> adapter.supports(request))
+                                  .peek(adapter -> this.logger.debug(
+                                          "{} supports this request and will "
+                                                  + "attempt to adapt it.",
+                                          adapter.getClass()
+                                                 .getSimpleName()
+                                  ))
+                                  .findFirst()
+                                  .map(httpFilterAdapter -> httpFilterAdapter.adapt(request))
+                                  .orElse(new FilterRequestWrapper<>())
+                                  .isSimple(simpleFilter -> getSimpleFilterSpecification(
+                                          simpleFilter,
+                                          genericType
+                                  ))
+                                  .orComplex(complexFilter -> getComplexFilterSpecification(
+                                          complexFilter,
+                                          genericType
+                                  ))
+                                  .or(this::noFilterSpecification);
     }
 
     /**
@@ -122,26 +135,23 @@ public class FilterJsonArgumentResolver
      * recursively builds a composite {@link Specification} based on the
      * logical operations and groupings defined within the filter request.
      *
-     * @param complexFilterJson The JSON string containing the complex filter
-     *                          criteria.
-     * @param genericType       The entity class type on which the filter
-     *                          will be applied.
+     * @param complexFilter The adapted {@link FilterGroupRequest} from the
+     *                      request
+     * @param genericType   The entity class type on which the filter
+     *                      will be applied.
      * @return A {@link Specification} representing the complex filtering
      * criteria.
      * @throws JsonProcessingException If there is an error parsing the JSON
      *                                 string.
      */
     private Specification<Object> getComplexFilterSpecification(
-            String complexFilterJson,
+            FilterGroupRequest complexFilter,
             Class<?> genericType
-    ) throws JsonProcessingException {
+    ) {
         return this.computeRecursiveRightLeftSideQuery(
                 this.noFilterSpecification(),
                 FilterLogicalOperator.AND,
-                this.objectMapper.readValue(
-                        complexFilterJson,
-                        FilterGroupRequest.class
-                ),
+                complexFilter,
                 genericType
         );
     }
@@ -223,35 +233,18 @@ public class FilterJsonArgumentResolver
      * then transformed into a {@link Specification} based on the type of
      * entity being filtered.
      *
-     * @param filterJson  The JSON string containing filter criteria.
-     * @param genericType The class type of the entities being filtered.
+     * @param simpleRequest The adapted simple {@link FilterRequest} from the
+     *                      request
+     * @param genericType   The class type of the entities being filtered.
      * @return A {@link Specification} that represents the filter criteria
      * provided.
-     * @throws JsonProcessingException If there is an error parsing the JSON
-     *                                 string.
      */
     private Specification<Object> getSimpleFilterSpecification(
-            String filterJson,
+            List<FilterRequest> simpleRequest,
             Class<?> genericType
-    ) throws JsonProcessingException {
-        var specification = noFilterSpecification();
-
-        if (!filterJson.startsWith("[")) {
-            return this.getSpecification(
-                    specification,
-                    this.objectMapper.readValue(
-                            filterJson,
-                            FilterRequest.class
-                    ),
-                    genericType,
-                    FilterLogicalOperator.AND
-            );
-        }
-
-        for (var filter : this.objectMapper.readValue(
-                filterJson,
-                FilterRequest[].class
-        )) {
+    ) {
+        var specification = this.noFilterSpecification();
+        for (var filter : simpleRequest) {
             specification = getSpecification(
                     specification,
                     filter,
