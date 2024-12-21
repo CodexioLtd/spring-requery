@@ -66,7 +66,7 @@ a generic HTTP Request and a desired query while maintaining the security undern
 <dependency>
     <groupId>bg.codexio.springframework.data.jpa.requery</groupId>
     <artifactId>requery-core</artifactId>
-    <version>1.0.5</version>
+    <version>1.0.6-SNAPSHOT</version>
 </dependency>
 ```
 
